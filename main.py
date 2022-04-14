@@ -6,7 +6,7 @@ import geopandas as gdp
 import json
 from bokeh.io import curdoc
 from bokeh.plotting import figure
-from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider, HoverTool, ColumnDataSource
+from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider, HoverTool, ColumnDataSource, RadioButtonGroup
 from bokeh.palettes import brewer
 from bokeh.layouts import widgetbox, row, column
 
@@ -59,19 +59,31 @@ p.patches('xs','ys', source = geosource, fill_color = {'field' :'Gas_Import', 't
 p.add_layout(color_bar, 'right')
 p.add_tools(hover)
 
+option = "Natural Gas"
 def update_plot(attr, old, new):
     yr = slider.value
     new_data = json_data_selector(yr)
     geosource.geojson = new_data
-    p.title.text = 'Russian export influence over Europe: Natural Gas, %d' %yr
+    #p.title.text = 'Russian export influence over Europe: Natural Gas, %d' %yr
+    p.title.text = 'Russian export influence over Europe: {}, year {}'.format(option, yr)
 
 # Make a slider object: slider 
 slider = Slider(title = 'Year',start = 2011, end = 2020, step = 1, value = 2011)
 # callback.args['']
 slider.on_change('value', update_plot)
 
+def update(attr, old, new):
+    global option
+    option = LABELS[radio_button_group.active]
+    update_plot('value',slider.value,slider.value)
+
+LABELS = ["Natural Gas", "Option 2", "Option 3"]
+radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
+radio_button_group.on_change('active', update)
+
 # Make a column layout of widgetbox(slider) and plot, and add it to the current document
-l = column(p,widgetbox(slider))
+l0 = column(widgetbox(radio_button_group), p)
+l = column(l0,widgetbox(slider))
 
 #--------------------------------------- SCATTER PLOT (TODO Replace by one of our graphs)
 import random
