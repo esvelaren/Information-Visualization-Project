@@ -18,27 +18,14 @@ from bokeh.layouts import widgetbox, row, column
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
 with open('df_gas.pickle', 'rb') as handle:
     df_gas = pickle.load(handle)
-    #dataset with all names of countries
-#df_gas['Country']=df_gas.Country.str.slice(-3)
-#df_gas['Country']=df_gas.Country.str.replace(",", "")
-#df_gas['Country'] = coco.convert(names=df_gas.Country.tolist(), to='name_short', not_found=None)
-#df_gas['Country']=df_gas.Country.str.replace("UK","United Kingdom")
-
 
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
-# standarize--------------------------???
-#gdf = gdp.read_file(shapefile)[['NAME','geometry']]
-#gdf.columns = ['Country','geometry']
 
 # Function to match the 2 tables at the year selected in the slider
 def json_data_selector(selectedYear):
     yr = selectedYear
     df_yr = df_gas[df_gas['Year'] == yr]
-    #merge of data set and mao
-    #------------------------ replace Nan in : ???
-    #df_yr=df_yr.str.replace(":", "NaN")
-    #merged=gdf.merge(df_yr,on='Country',how='left')
     merged = gdf.merge(df_yr, on='Country')
     #merged.fillna('No data', inplace = True)
     merged_json = json.loads(merged.to_json())
