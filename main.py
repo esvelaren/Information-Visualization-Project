@@ -27,6 +27,7 @@ def json_data_selector(selectedYear):
     yr = selectedYear
     df_yr = df_gas[df_gas['Year'] == yr]
     merged = gdf.merge(df_yr, on='Country')
+    #merged_2011 = gdf.merge(df_2011, on='Country', how='left')  -> addition from Erick
     #merged.fillna('No data', inplace = True)
     merged_json = json.loads(merged.to_json())
     json_data = json.dumps(merged_json)
