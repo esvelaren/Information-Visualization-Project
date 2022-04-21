@@ -9,16 +9,14 @@ from bokeh.plotting import figure
 from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider, HoverTool, ColumnDataSource, RadioButtonGroup
 from bokeh.palettes import brewer
 from bokeh.layouts import widgetbox, row, column
-#install
-#!pip install country_converter
-#import country_converter as coco
+
+# HOLA THIS IS A TEST!
 
 # Loading pickles: 
 # TODO: Add the rest of datasets. 
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
-with open('df_gas.pickle', 'rb') as handle:
+with open('df_nat_gas_ru.pickle', 'rb') as handle:
     df_gas = pickle.load(handle)
-
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 
@@ -26,27 +24,26 @@ with open('gdf.pickle', 'rb') as handle:
 def json_data_selector(selectedYear):
     yr = selectedYear
     df_yr = df_gas[df_gas['Year'] == yr]
-    merged = gdf.merge(df_yr, on='Country')
-    #merged_2011 = gdf.merge(df_2011, on='Country', how='left')  -> addition from Erick
+    merged = gdf.merge(df_yr, on='Country',how='left') # how='left'
     #merged.fillna('No data', inplace = True)
     merged_json = json.loads(merged.to_json())
     json_data = json.dumps(merged_json)
     return json_data
 
 #Input GeoJSON source that contains features for plotting.
-geosource = GeoJSONDataSource(geojson = json_data_selector(2011))
+geosource = GeoJSONDataSource(geojson = json_data_selector(2000))
 #Define a sequential multi-hue color palette.
 palette = brewer['Greens'][8]
 #Reverse color order so that dark blue is highest obesity.
 palette = palette[::-1]
 #Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors. Input nan_color.
 # TODO Change High Range
-color_mapper = LinearColorMapper(palette = palette, low = 0.00, high = 30000.000, nan_color = '#d9d9d9')
+color_mapper = LinearColorMapper(palette = palette, low = 0.00, high = 100.000, nan_color = '#d9d9d9')
 #Define custom tick labels for color bar.
-tick_labels = {'5000': '5000 m',}
+tick_labels = {'5000': '5000',}
 #Add hover tool
 hover = HoverTool(tooltips = [('Country Code: ','@Country'),
-                              ('Russian Natural Gas Import','@Gas_Import')])
+                              ('Russian Natural Gas Import','@Import')])
 #Create color bar.
 color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8,width = 20, height = 500,
                      border_line_color=None,location = (0,0), orientation = 'vertical', major_label_overrides = tick_labels)
@@ -58,7 +55,7 @@ p.xgrid.grid_line_color = None
 p.ygrid.grid_line_color = None
 
 #Add patch renderer to figure (for the map)
-p.patches('xs','ys', source = geosource, fill_color = {'field' :'Gas_Import', 'transform' : color_mapper},
+p.patches('xs','ys', source = geosource, fill_color = {'field' :'Import', 'transform' : color_mapper},
           line_color = 'black', line_width = 0.5, fill_alpha = 1)
 #Specify layout
 p.add_layout(color_bar, 'right')
@@ -73,7 +70,7 @@ def update_plot(attr, old, new):
     p.title.text = 'Russian export influence over Europe: {}, year {}'.format(option, yr)
 
 # Make a slider object: slider 
-slider = Slider(title = 'Year',start = 2011, end = 2020, step = 1, value = 2011)
+slider = Slider(title = 'Year',start = 2000, end = 2020, step = 1, value = 2000)
 # callback.args['']
 slider.on_change('value', update_plot)
 
@@ -82,7 +79,7 @@ def update(attr, old, new):
     option = LABELS[radio_button_group.active]
     update_plot('value',slider.value,slider.value)
 
-LABELS = ["Natural Gas", "Option 2", "Option 3"]
+LABELS = ["Natural Gas", "Oil Petrol", "Solid Fuel"]
 radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
 radio_button_group.on_change('active', update)
 

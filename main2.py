@@ -10,12 +10,12 @@ from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider,
 from bokeh.palettes import brewer
 from bokeh.layouts import widgetbox, row, column
 
-with open('df_gas.pickle', 'rb') as handle:
-    df_gas = pickle.load(handle)
-with open('df_gas.pickle', 'rb') as handle:
-    df_gas = pickle.load(handle)
-with open('df_gas.pickle', 'rb') as handle:
-    df_gas = pickle.load(handle)
+with open('df_nat_gas_ru.pickle', 'rb') as handle:
+    df_nat_gas_ru = pickle.load(handle)
+with open('df_oil_petrol_ru.pickle', 'rb') as handle:
+    df_oil_petrol_ru = pickle.load(handle)
+with open('df_solid_fuel_ru.pickle', 'rb') as handle:
+    df_solid_fuel_ru = pickle.load(handle)
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 
@@ -23,7 +23,12 @@ with open('gdf.pickle', 'rb') as handle:
 def json_data_selector(selectedYear):
     yr = selectedYear
     # CHANGE!
-    df_yr = df_gas[df_gas['Year'] == yr]
+    if (input_field == "Natural Gas"):
+        df_yr = df_nat_gas_ru[df_nat_gas_ru['Year'] == yr]
+    elif (input_field == "Oil Petrol"):
+        df_yr = df_oil_petrol_ru[df_oil_petrol_ru['Year'] == yr]
+    elif (input_field == "Solid Fuel"):
+        df_yr = df_solid_fuel_ru[df_solid_fuel_ru['Year'] == yr]
     merged = gdf.merge(df_yr, on='Country')
     #merged.fillna('No data', inplace = True)
     merged_json = json.loads(merged.to_json())
@@ -53,15 +58,15 @@ def update_plot(attr, old, new):
 
 def make_plot(field_name):    
   # Set the format of the colorbar
-  min_range = format_df.loc[format_df['field'] == field_name, 'min_range'].iloc[0]
-  max_range = format_df.loc[format_df['field'] == field_name, 'max_range'].iloc[0]
-  field_format = format_df.loc[format_df['field'] == field_name, 'format'].iloc[0]
+#   min_range = format_df.loc[format_df['field'] == field_name, 'min_range'].iloc[0]
+#   max_range = format_df.loc[format_df['field'] == field_name, 'max_range'].iloc[0]
+#   field_format = format_df.loc[format_df['field'] == field_name, 'format'].iloc[0]
 
   # Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
-  color_mapper = LinearColorMapper(palette = palette, low = min_range, high = max_range)
+  color_mapper = LinearColorMapper(palette = palette, low = 0, high = 100)
 
   # Create color bar.
-  format_tick = NumeralTickFormatter(format=field_format)
+#   format_tick = NumeralTickFormatter(format=field_format)
   color_bar = ColorBar(color_mapper=color_mapper, label_standoff=18, formatter=format_tick,
   border_line_color=None, location = (0, 0))
 
@@ -88,8 +93,8 @@ def make_plot(field_name):
 
 # Input geojson source that contains features for plotting for:
 # initial year 2018 and initial criteria sale_price_median
-geosource = GeoJSONDataSource(geojson = json_data_selector(2011))
 input_field = 'Natural Gas'
+geosource = GeoJSONDataSource(geojson = json_data_selector(2000))
 
 # Define a sequential multi-hue color palette.
 palette = brewer['Blues'][8]
@@ -98,13 +103,8 @@ palette = brewer['Blues'][8]
 palette = palette[::-1]
 
 # Add hover tool
-hover = HoverTool(tooltips = [ ('Neighborhood','@neighborhood_name'),
-                               ('# Sales', '@sale_price_count'),
-                               ('Average Price', '$@sale_price_mean{,}'),
-                               ('Median Price', '$@sale_price_median{,}'),
-                               ('Average SF', '@sf_mean{,}'),
-                               ('Price/SF ', '$@price_sf_mean{,}'),
-                               ('Income Needed', '$@min_income{,}')])
+hover = HoverTool(tooltips = [('Country Code: ','@Country'),
+                              ('Russian Import Value','@Import')])
 
 # Call the plotting function
 p = make_plot(input_field)
@@ -118,11 +118,11 @@ slider.on_change('value', update_plot)
 #                                                                                'Average Sales Price', 'Average Price Per Square Foot',
 #                                                                                'Average Square Footage', 'Number of Sales'])
 # select.on_change('value', update_plot)
-LABELS = ["Natural Gas", "Option 2", "Option 3"]
+LABELS = ["Natural Gas", "Oil Petrol", "Solid Fuel"]
 radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
 radio_button_group.on_change('active', update_plot)
 
 # Make a column layout of widgetbox(slider) and plot, and add it to the current document
 # Display the current document
-layout = column(p, widgetbox(select), widgetbox(slider))
+layout = column(p, widgetbox(radio_button_group), widgetbox(slider))
 curdoc().add_root(layout)
