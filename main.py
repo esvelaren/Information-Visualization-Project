@@ -13,13 +13,15 @@ from bokeh.palettes import brewer
 from bokeh.palettes import Category20
 from bokeh.layouts import widgetbox, row, column
 
-# HOLA THIS IS A TEST!
 
-# Loading pickles: 
-# TODO: Add the rest of datasets. 
+# Loading pickles:
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
 with open('df_nat_gas_ru.pickle', 'rb') as handle:
     df_gas = pickle.load(handle)
+with open('df_oil_petrol_ru.pickle', 'rb') as handle:
+    df_oil = pickle.load(handle)
+with open('df_solid_fuel_ru.pickle', 'rb') as handle:
+    df_solid = pickle.load(handle)
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 with open('df_sitc.pickle', 'rb') as handle:
