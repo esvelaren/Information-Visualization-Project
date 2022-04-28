@@ -86,7 +86,7 @@ def update_plot(attr, old, new):
 # Make a slider object: slider
 slider = Slider(title='Year', start=2000, end=2020, step=1, value=2000)
 # callback.args['']
-slider.on_change('value', update_plot)
+slider.on_change('value_throttled', update_plot)  # 'value_throttled' -> the value is updated only at the mouseup
 
 
 def update(attr, old, new):
