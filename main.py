@@ -159,13 +159,131 @@ data = pd.Series(x).reset_index(name='value').rename(columns={'index': 'country'
 data['angle'] = data['value'] / data['value'].sum() * 2 * np.pi
 data['color'] = Category20[len(x)]
 
-p5 = figure(height=350, title="Relative natural gas importers to the EU", toolbar_location=None,
-            tools="hover", tooltips="@country: @value", x_range=(-0.5, 1.0))
+#p5 = figure(height=350, title="Relative natural gas importers to the EU", toolbar_location=None,
+ #           tools="hover", tooltips="@country: @value", x_range=(-0.5, 1.0))
 
-p5.annular_wedge(x=0, y=1, inner_radius=0.1, outer_radius=0.4,
-         start_angle=cumsum('angle', include_zero=True), end_angle=cumsum('angle'),
-         line_color="white", fill_color='color', legend_field='country', source=data)
+#p5.annular_wedge(x=0, y=1, inner_radius=0.1, outer_radius=0.4,
+ #        start_angle=cumsum('angle', include_zero=True), end_angle=cumsum('angle'),
+ #        line_color="white", fill_color='color', legend_field='country', source=data)
+#---------------------------------------------------------------------TRY
+from collections import OrderedDict
+from io import StringIO
+from bokeh.io import output_notebook
+output_notebook()
+from math import log, sqrt
+from bokeh.plotting import figure, output_file, show
+import numpy as np
+import bokeh
+import pandas as pd
 
+
+from bokeh.plotting import figure, output_file, show
+
+
+
+dataset = """
+country,   oil, energy, fuel, gram
+spain,      800,        509,          353,        negative
+Germany,    1043,       598,          4543,     negative
+UK,         3984,       100,          5,      negative
+Iceland,    850,        4564,         1,        negative
+Italy,      1335,       3978,         99783,     negative
+France,     850,        2,            432,      negative
+Portugal,   100,        93478,        32,      negative
+Belgium,    1453,       9387,         3553,    negative
+Poland,     870,        41,           34,      negative
+Malta,      1000,       4085,         1,    positive
+Greece,     156,        497,          45,      positive
+Others,     400,        5565,         87654,    positive
+
+"""
+
+dataset_color = OrderedDict([
+    ("oil",   "#0d3362"),
+    ("energy", "#c64737"),
+    ("fuel",     "black"  ),
+])
+
+gram_color = OrderedDict([
+    ("negative", "#e69584"),
+    ("positive", "#aeaeb8"),
+])
+
+df = pd.read_csv(StringIO(dataset),
+                 skiprows=1,
+                 skipinitialspace=True,
+                 engine='python')
+
+width = 700
+height = 700
+inner_radius = 90
+outer_radius = 300 - 10
+
+maxr = sqrt(log(1 * 1E4))
+minr = sqrt(log(1000000 * 1E4))
+a = (outer_radius - inner_radius) / (minr - maxr)
+b = inner_radius - a * maxr
+
+def rad(mic):
+    return a * np.sqrt(np.log(mic * 1E4)) + b
+
+big_angle = 2.0 * np.pi / (len(df) + 1)
+small_angle = big_angle / 7
+
+p5 = figure(plot_width=width, plot_height=height, title="",
+    x_axis_type=None, y_axis_type=None,
+    x_range=(-420, 420), y_range=(-420, 420),
+    min_border=0, outline_line_color="black",
+    background_fill_color="#f0e1d2")
+
+p5.xgrid.grid_line_color = None
+p5.ygrid.grid_line_color = None
+
+# annular wedges
+angles = np.pi/2 - big_angle/2 - df.index.to_series()*big_angle
+colors = [gram_color[gram] for gram in df.gram]
+p5.annular_wedge(
+    0, 0, inner_radius, outer_radius, -big_angle+angles, angles, color=colors,
+)
+
+# small wedges
+p5.annular_wedge(0, 0, inner_radius, rad(df.oil),
+                -big_angle+angles+5*small_angle, -big_angle+angles+6*small_angle,
+                color=dataset_color['oil'])
+p5.annular_wedge(0, 0, inner_radius, rad(df.energy),
+                -big_angle+angles+3*small_angle, -big_angle+angles+4*small_angle,
+                color=dataset_color['energy'])
+p5.annular_wedge(0, 0, inner_radius, rad(df.fuel),
+                -big_angle+angles+1*small_angle, -big_angle+angles+2*small_angle,
+                color=dataset_color['fuel'])
+
+# circular axes and lables
+labels = np.power(10.0, np.arange(0,7))
+radii = a * np.sqrt(np.log(labels * 1E4)) + b
+p5.circle(0, 0, radius=radii, fill_color=None, line_color="white")
+p5.text(0, radii[:-1], [str(r) for r in labels[:-1]],
+       text_font_size="11px", text_align="center", text_baseline="middle")
+
+# radial axes
+p5.annular_wedge(0, 0, inner_radius-10, outer_radius+10,
+                -big_angle+angles, -big_angle+angles, color="black")
+
+# Country labels
+xr = radii[-1]*np.cos(np.array(-big_angle/2 + angles))
+yr = radii[-1]*np.sin(np.array(-big_angle/2 + angles))
+label_angle=np.array(-big_angle/2+angles)
+label_angle[label_angle < -np.pi/2] += np.pi # easier to read labels on the left side
+p5.text(xr, yr, df.country, angle=label_angle,
+       text_font_size="12px", text_align="center", text_baseline="middle")
+
+
+p5.rect([-40, -40, -40], [18, 0, -18], width=30, height=13,
+       color=list(dataset_color.values()))
+p5.text([-15, -15, -15], [18, 0, -18], text=list(dataset_color),
+       text_font_size="12px", text_align="left", text_baseline="middle")
+
+#show(p)
+#-----------------------------------------------------------------------TRY
 
 p5.axis.axis_label = None
 p5.axis.visible = False
