@@ -162,9 +162,10 @@ data['color'] = Category20[len(x)]
 p5 = figure(height=350, title="Relative natural gas importers to the EU", toolbar_location=None,
             tools="hover", tooltips="@country: @value", x_range=(-0.5, 1.0))
 
-p5.wedge(x=0, y=1, radius=0.4,
+p5.annular_wedge(x=0, y=1, inner_radius=0.1, outer_radius=0.4,
          start_angle=cumsum('angle', include_zero=True), end_angle=cumsum('angle'),
          line_color="white", fill_color='color', legend_field='country', source=data)
+
 
 p5.axis.axis_label = None
 p5.axis.visible = False
