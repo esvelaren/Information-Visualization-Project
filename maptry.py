@@ -26,7 +26,7 @@ with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 with open('df_sitc.pickle', 'rb') as handle:
     df_sitc = pickle.load(handle)
-
+gdf.crs = {"init":"epsg:4326"}
 
 # shapefile = 'datasets/ne_110m_admin_0_countries.shp'
 # #Read shapefile using Geopandas
@@ -37,26 +37,34 @@ with open('df_sitc.pickle', 'rb') as handle:
 # owid = pd.read_csv('data/owid.csv').set_index('name')
 
 def get_dataset(name,key=None,year=None):
-
     # url = owid.loc[name].url
     # df = pd.read_csv(url)
-    if year is not None:
-        df = df[df['Year'] == year]
-    #Merge dataframes gdf and df_2016.
-    if key is None:
-        #name of column for plotting is always the third one
-        key = df.columns[2]
+    # if year is not None:
+    #     df = df[df['Year'] == year]
+    # #Merge dataframes gdf and df_2016.
+    # if key is None:
+    #     #name of column for plotting is always the third one
+    #     key = df.columns[2]
+    if (name == "Natural Gas"):
+        df = df_gas[df_gas['Year'] == year]
+    elif (name == "Oil Petrol"):
+        df = df_oil[df_oil['Year'] == year]
+    elif (name == "Solid Fuel"):
+        df = df_solid[df_solid['Year'] == year]
+    merged = gdf.merge(df, on='Country', how='left')
+    key = 'Import'
     #merge with the geopandas dataframe
-    merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
-    merged[key] = merged[key].fillna(0)    
+    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
+    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
+    # merged[key] = merged[key].fillna(0)    
     return merged, key
 
-datasetname='Land surface temperature anomaly'
-data,key = get_dataset(datasetname, year=2010)
+datasetname='Natural Gas'
+data,key = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
 fig, ax = plt.subplots(1, figsize=(14, 8))
 data.plot(column=key, cmap='OrRd', linewidth=0.8, ax=ax, edgecolor='black')
 ax.axis('off')
-ax.set_title('%s 2010' %datasetname, fontsize=18)
+ax.set_title('%s 2000' %datasetname, fontsize=18)
 
 def get_geodatasource(gdf):    
     """Get getjsondatasource from geopandas object"""
@@ -91,8 +99,9 @@ def map_dash():
 
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=400)
-    data_select = pnw.Select(name='dataset',options=list(owid.index))
-    year_slider = pnw.IntSlider(start=1950,end=2018,value=2010)
+    # data_select = pnw.Select(name='dataset',options=list(owid.index))
+    data_select = pnw.Select(name='dataset',options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
+    year_slider = pnw.IntSlider(start=2000,end=2020,value=2000)
     def update_map(event):
         gdf,key = get_dataset(name=data_select.value,year=year_slider.value)        
         map_pane.object = bokeh_plot_map(gdf, key)        
@@ -101,6 +110,7 @@ def map_dash():
     year_slider.param.trigger('value')
     data_select.param.watch(update_map,'value')
     app = pn.Column(pn.Row(data_select,year_slider),map_pane)
+    app.servable()
     return app
 
 app = map_dash()
