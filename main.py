@@ -1,5 +1,6 @@
 # Required modules
 import pickle
+from turtle import width
 import pandas as pd
 import numpy as np
 import geopandas as gdp
@@ -12,7 +13,12 @@ from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider,
 from bokeh.palettes import brewer
 from bokeh.palettes import Category20
 from bokeh.layouts import widgetbox, row, column
-
+import plotly.express as px
+import numpy as np
+from io import StringIO
+from bokeh.models import Button
+import panel as pn
+dz=0
 
 # Loading pickles:
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
@@ -35,16 +41,22 @@ with open('df_sitc.pickle', 'rb') as handle:
 def json_data_selector(selectedYear):
     yr = selectedYear
     df_yr = df_gas[df_gas['Year'] == yr]
-    print(df_yr)
     merged = gdf.merge(df_yr, on='Country', how='left')  # how='left'
     # merged.fillna('No data', inplace = True)
     merged_json = json.loads(merged.to_json())
     json_data = json.dumps(merged_json)
     return json_data
 
+def values(yr):
+    df_yr = df_gas[df_gas['Year'] == yr]
+    #print(df_yr)
+    return df_yr
 
 # Input GeoJSON source that contains features for plotting.
 geosource = GeoJSONDataSource(geojson=json_data_selector(2000))
+
+
+
 # Define a sequential multi-hue color palette.
 
 palette = brewer['Greens'][8]
@@ -84,15 +96,20 @@ p.add_tools(hover)
 option = "Natural Gas"
 #print(option)
 
+df1 = df_gas[df_gas['Year'] == 2000]
+
 def update_plot(attr, old, new):
     yr = slider.value
     new_data = json_data_selector(yr)
     geosource.geojson = new_data
+    global df1
+    df1 = df_gas[df_gas['Year'] == yr]
     # p.title.text = 'Russian export influence over Europe: Natural Gas, %d' %yr
     p.title.text = 'Russian export influence over Europe: {}, year {}'.format(option, yr)
+   # return values(yr)
 
-
-
+#print(update_plot)
+print(df1)
 # Make a slider object: slider
 slider = Slider(title='Year', start=2000, end=2020, step=1, value=2000)
 # callback.args['']
@@ -106,6 +123,7 @@ def update(attr, old, new):
     update_plot('value', slider.value, slider.value)
 
 
+
 LABELS = ["Natural Gas", "Oil Petrol", "Solid Fuel"]
 radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
 radio_button_group.on_change('active', update)
@@ -113,6 +131,7 @@ radio_button_group.on_change('active', update)
 # Make a column layout of widgetbox(slider) and plot, and add it to the current document
 l0 = column(widgetbox(radio_button_group), p)
 l = column(l0, widgetbox(slider))
+
 
 # --------------------------------------- SCATTER PLOT (TODO Replace by one of our graphs)
 import random
@@ -176,17 +195,10 @@ data['color'] = Category20[len(x)]
  #        line_color="white", fill_color='color', legend_field='country', source=data)
  #---------------------------------------------------------------------tree
  
-import plotly.express as px
-import numpy as np
-from io import StringIO
-from bokeh.models import Button
-import panel as pn
+
 
 pn.extension('plotly')
 
-df1 = df_gas[df_gas['Year'] == slider.value]
-
-#print(df1)
 
 
 fig = px.treemap(df1, path=['Year','Country'], values='Import',
@@ -194,7 +206,8 @@ fig = px.treemap(df1, path=['Year','Country'], values='Import',
                   color_continuous_scale='RdBu',
                   color_continuous_midpoint=np.average(df1['Import'], weights=df1['Import']))
 
-
+#fig.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="LightSteelBlue")
+fig.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=50,pad=2))
  #---------------------------------------------------------------------tree
 #---------------------------------------------------------------------TRY
 
@@ -222,7 +235,7 @@ Date = source.data['date']
 
 source = ColumnDataSource(df_sitc.reset_index())
 
-p4 = figure(x_range=Date, height=400, title="SITC imports by year")
+p4 = figure(x_range=Date, height=350,width=800, title="SITC imports by year")
 
 #p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
 #              legend_label=str(sitc))  # TODO: Problem with the label
