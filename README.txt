@@ -17,10 +17,14 @@ if so you can skip the previous step and use your environment on visual code or 
 pip install pandas
 + plotly:
 pip install plotly
++ plotly express:
+pip install plotly_express==0.4.0
 + panel
 pip install panel
 + bokeh
 pip install bokeh
++ matplotlib
+pip install matplotlib
 + geopandas: to be installed correctly, install as follows:
 pip install wheel
 pip install pipwin
@@ -33,6 +37,8 @@ pipwin install pyproj
 pipwin install six
 pipwin install rtree
 pipwin install geopandas
++ descartes: for plotting geopandas
+pip install descartes
 
 Note: 	You can do by typing in the terminal: pip install pandas (for example)
 	Maybe you are required to install something else, if so the
