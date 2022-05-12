@@ -5,7 +5,7 @@ import matplotlib as mpl
 import pylab as plt
 
 from bokeh.io import output_file, show, output_notebook, export_png
-from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar
+from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
 
@@ -28,41 +28,25 @@ with open('df_sitc.pickle', 'rb') as handle:
     df_sitc = pickle.load(handle)
 gdf.crs = {"init":"epsg:4326"}
 
-# shapefile = 'datasets/ne_110m_admin_0_countries.shp'
-# #Read shapefile using Geopandas
-# gdf = gpd.read_file(shapefile)[['ADMIN', 'ADM0_A3', 'geometry']]
-#Rename columns.
-# gdf.columns = ['country', 'country_code', 'geometry']
-# gdf = gdf.drop(gdf.index[159])
-# owid = pd.read_csv('data/owid.csv').set_index('name')
-
 def get_dataset(name,key=None,year=None):
-    # url = owid.loc[name].url
-    # df = pd.read_csv(url)
-    # if year is not None:
-    #     df = df[df['Year'] == year]
-    # #Merge dataframes gdf and df_2016.
-    # if key is None:
-    #     #name of column for plotting is always the third one
-    #     key = df.columns[2]
+    global datasetname
     if (name == "Natural Gas"):
         df = df_gas[df_gas['Year'] == year]
+        datasetname='Natural Gas'
     elif (name == "Oil Petrol"):
         df = df_oil[df_oil['Year'] == year]
+        datasetname='Oil Petrol'
     elif (name == "Solid Fuel"):
         df = df_solid[df_solid['Year'] == year]
+        datasetname='Solid Fuel'
     merged = gdf.merge(df, on='Country', how='left')
-    key = 'Import'
-    #merge with the geopandas dataframe
-    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
-    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
-    # merged[key] = merged[key].fillna(0)    
+    key = 'Import' 
     return merged, key
 
 datasetname='Natural Gas'
 data,key = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
 fig, ax = plt.subplots(1, figsize=(14, 8))
-data.plot(column=key, cmap='OrRd', linewidth=0.8, ax=ax, edgecolor='black')
+data.plot(column=key, cmap='Greens', linewidth=0.8, ax=ax, edgecolor='black')
 ax.axis('off')
 ax.set_title('%s 2000' %datasetname, fontsize=18)
 
@@ -73,18 +57,28 @@ def get_geodatasource(gdf):
 
 def bokeh_plot_map(gdf, column=None, title=''):
     """Plot bokeh map from GeoJSONDataSource """
-
+    global datasetname
     geosource = get_geodatasource(gdf)
-    palette = brewer['OrRd'][8]
+    if datasetname == "Natural Gas":
+        palette = brewer['Greens'][8]
+    elif datasetname == "Oil Petrol":
+        palette = brewer['Blues'][8]
+    elif datasetname == "Solid Fuel":
+        palette = brewer['Oranges'][8]
     palette = palette[::-1]
     vals = gdf[column]
+
+    hover = HoverTool(tooltips=[('Country: ', '@Country'),
+                                ('Russian {} Import'.format(datasetname), '@Import')])
     #Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
-    color_mapper = LinearColorMapper(palette = palette, low = vals.min(), high = vals.max())
+    color_mapper = LinearColorMapper(palette = palette, low = 0, high = 100)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, width=500, height=20,
                          location=(0,0), orientation='horizontal')
 
-    tools = 'wheel_zoom,pan,reset'
+    tools = 'wheel_zoom,pan,reset,hover'
     p = figure(title = title, plot_height=400 , plot_width=850, toolbar_location='right', tools=tools)
+    p.xaxis.visible = False
+    p.yaxis.visible = False
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     #Add patch renderer to figure
@@ -92,14 +86,13 @@ def bokeh_plot_map(gdf, column=None, title=''):
               fill_color={'field' :column , 'transform': color_mapper})
     #Specify figure layout.
     p.add_layout(color_bar, 'below')
+    p.add_tools(hover)
     return p
 
 def map_dash():
     """Map dashboard"""
-
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=400)
-    # data_select = pnw.Select(name='dataset',options=list(owid.index))
     data_select = pnw.Select(name='dataset',options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = pnw.IntSlider(start=2000,end=2020,value=2000)
     def update_map(event):
