@@ -235,7 +235,7 @@ Date = source.data['date']
 
 source = ColumnDataSource(df_sitc.reset_index())
 
-p4 = figure(x_range=Date, height=350,width=800, title="SITC imports by year")
+p4 = figure(x_range=Date, height=350, width=800, title="SITC imports by year")
 
 #p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
 #              legend_label=str(sitc))  # TODO: Problem with the label
