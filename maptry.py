@@ -50,7 +50,7 @@ def get_dataset(name,key=None,year=None):
         df = df_solid[df_solid['Year'] == year]
         datasetname='Solid Fuel'
     merged = gdf.merge(df, on='Country', how='left')
-    key = 'Import' 
+    key = 'Import'
     return merged, key
 
 
@@ -73,7 +73,7 @@ ax.axis('off')
 ax.set_title('%s 2000' %datasetname, fontsize=18)
 
 
-def get_geodatasource(gdf):    
+def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
     json_data = json.dumps(json.loads(gdf.to_json()))
     return GeoJSONDataSource(geojson = json_data)
@@ -99,7 +99,8 @@ def bokeh_plot_map(gdf, column=None, title=''):
     #Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
     color_mapper = LinearColorMapper(palette=palette, low=0, high=100)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, height=660, width=20,
-                         location=(0, 0), orientation='vertical', border_line_color=None, major_label_overrides=tick_labels)
+                         location=(0, 0), orientation='vertical', border_line_color=None,
+                         major_label_overrides=tick_labels)
 
     tools = 'wheel_zoom,pan,reset,hover'
     p = figure(title = title, plot_height=400 , plot_width=850, toolbar_location='right', tools=tools)
@@ -108,7 +109,7 @@ def bokeh_plot_map(gdf, column=None, title=''):
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
     #Add patch renderer to figure
-    p.patches('xs','ys', source=geosource, fill_alpha=1, line_width=0.5, line_color='black',  
+    p.patches('xs','ys', source=geosource, fill_alpha=1, line_width=0.5, line_color='black',
               fill_color={'field' :column , 'transform': color_mapper})
     #Specify figure layout.
     p.add_layout(color_bar, 'right')
@@ -123,12 +124,14 @@ def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=700)
-    data_select = pnw.Select(name='dataset',options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
-    year_slider = pnw.IntSlider(name='Year',start=2000,end=2020,value=2000,callback_policy='mouseup')
+    # data_select = pnw.Select(name='dataset',options=list(owid.index))
+    data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
+    # year_slider = pnw.IntSlider(start=2000, end=2020, value=2000)
+    year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
 
     def update_map(event):
-        gdf,key = get_dataset(name=data_select.value,year=year_slider.value)        
-        map_pane.object = bokeh_plot_map(gdf, key) 
+        gdf, key = get_dataset(name=data_select.value,year=year_slider.value)
+        map_pane.object = bokeh_plot_map(gdf, key)
         global gdf2
         gdf2 = get_dataset2(name=data_select.value, year=year_slider.value)
         global figure2
