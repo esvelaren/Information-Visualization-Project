@@ -100,7 +100,7 @@ def bokeh_plot_map(gdf, column=None, title=''):
     color_mapper = LinearColorMapper(palette=palette, low=0, high=100)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, height=660, width=20,
                          location=(0, 0), orientation='vertical', border_line_color=None,
-                         major_label_overrides=tick_labels)
+                         major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
     tools = 'wheel_zoom,pan,reset,hover'
     p = figure(title = title, plot_height=400 , plot_width=850, toolbar_location='right', tools=tools)
@@ -108,6 +108,9 @@ def bokeh_plot_map(gdf, column=None, title=''):
     p.yaxis.visible = False
     p.xgrid.grid_line_color = None
     p.ygrid.grid_line_color = None
+    p.background_fill_color = (245,245,245)
+    p.border_fill_color = (245,245,245)
+    p.outline_line_color = (245,245,245)
     #Add patch renderer to figure
     p.patches('xs','ys', source=geosource, fill_alpha=1, line_width=0.5, line_color='black',
               fill_color={'field' :column , 'transform': color_mapper})
@@ -140,27 +143,30 @@ def map_dash():
                              color_continuous_scale='RdBu',
                              color_continuous_midpoint=np.average(gdf2['Import'], weights=gdf2['Import']))
 
-        # figure2.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="LightSteelBlue")
-        figure2.update_layout(width=800, height=390, margin=dict(l=10, r=20, b=10, t=50, pad=2))
+        figure2.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="WhiteSmoke")
+        #figure2.update_layout(width=800, height=390, margin=dict(l=10, r=20, b=10, t=50, pad=2))
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
     year_slider.param.trigger('value_throttled')
     data_select.param.watch(update_map, 'value')
 
-    p4 = figure(x_range=Date, height=350, width=800, title="SITC imports by year")
+    p4 = figure(x_range=Date, height=350, width=800, title="SITC imports by year",background='WhiteSmoke')
     p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
                   legend_label=["%s" % x for x in sitc])  # TODO: Problem with the label
 
     p4.xgrid.grid_line_color = None
     p4.axis.minor_tick_line_color = None
     p4.outline_line_color = None
-    p4.legend.location = "right"
-    p4.legend.orientation = "vertical"
+    p4.legend.location = "top"
+    p4.legend.orientation = "horizontal"
+    p4.background_fill_color = (245,245,245)
+    p4.border_fill_color = (245,245,245)
+    p4.outline_line_color = (245,245,245)
 
-    l = pn.Column(pn.Row(data_select, year_slider), map_pane)
-    l2 = pn.Column(figure2, p4)
-    app = pn.Row(l, l2)
+    l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane, background='WhiteSmoke')
+    l2 = pn.Column(figure2, p4,background='WhiteSmoke')
+    app = pn.Row(l, l2, background='WhiteSmoke')
     app.servable()
     return app
 
