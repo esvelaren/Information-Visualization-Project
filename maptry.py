@@ -55,25 +55,13 @@ def get_dataset(name,key=None,year=None):
 
 
 def get_dataset2(name, year):
-    # url = owid.loc[name].url
-    # df = pd.read_csv(url)
-    # if year is not None:
-    #     df = df[df['Year'] == year]
-    # #Merge dataframes gdf and df_2016.
-    # if key is None:
-    #     #name of column for plotting is always the third one
-    #     key = df.columns[2]
+
     if (name == "Natural Gas"):
         df = df_gas[df_gas['Year'] == year]
     elif (name == "Oil Petrol"):
         df = df_oil[df_oil['Year'] == year]
     elif (name == "Solid Fuel"):
         df = df_solid[df_solid['Year'] == year]
-
-    # merge with the geopandas dataframe
-    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
-    # merged = gdf.merge(df, left_on = 'country', right_on = 'Entity', how = 'left')
-    # merged[key] = merged[key].fillna(0)    
     return df
 
 
