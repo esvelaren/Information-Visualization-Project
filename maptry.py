@@ -141,8 +141,9 @@ def map_dash():
         global gdf2
         gdf2 = get_dataset2(name=data_select.value, year=year_slider.value)
         global figure2
-        figure2 = px.treemap(gdf2, path=['Year', 'Country'], values='Import',
-                             color='Country', hover_data=['Import'],
+        print(df_gas_treemap)
+        figure2 = px.treemap(df_gas_treemap, path=['Continent', 'Partner'], values='Import',
+                             color='Partner', hover_data=['Import'],
                              color_continuous_scale='RdBu',
                              color_continuous_midpoint=np.average(gdf2['Import'], weights=gdf2['Import']))
 
