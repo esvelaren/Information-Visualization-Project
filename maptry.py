@@ -44,7 +44,7 @@ source = ColumnDataSource(data=df_sitc)  # data for the graph
 Date = source.data['date']
 source = ColumnDataSource(df_sitc.reset_index())
 
-def get_dataset(name,key=None,year=None):
+def get_dataset(name,year=None):
     global datasetname
     if (name == "Natural Gas"):
         df = df_gas[df_gas['Year'] == year]
@@ -56,14 +56,14 @@ def get_dataset(name,key=None,year=None):
         df = df_solid[df_solid['Year'] == year]
         datasetname='Solid Fuel'
     merged = gdf.merge(df, on='Country', how='left')
-    key = 'Import'
-    return merged, key
+    return merged
 
 
-def get_dataset2(name, year):
-
+def get_dataset2(name, year, country='EU27_2020'):
+    global datasetname
     if (name == "Natural Gas"):
-        df = df_gas[df_gas['Year'] == year]
+        df = df_gas[df_gas['Country'] == country]
+        df = df[df['Year'] == year]
     elif (name == "Oil Petrol"):
         df = df_oil[df_oil['Year'] == year]
     elif (name == "Solid Fuel"):
@@ -71,9 +71,9 @@ def get_dataset2(name, year):
     return df
 
 datasetname='Natural Gas'
-data,key = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
+data = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
 fig, ax = plt.subplots(1, figsize=(14, 8))
-data.plot(column=key, cmap='Greens', linewidth=0.8, ax=ax, edgecolor='black')
+data.plot(column='Import', cmap='Greens', linewidth=0.8, ax=ax, edgecolor='black')
 ax.axis('off')
 ax.set_title('%s 2000' %datasetname, fontsize=18)
 
@@ -136,10 +136,13 @@ def map_dash():
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
 
     def update_map(event):
-        gdf, key = get_dataset(name=data_select.value,year=year_slider.value)
-        map_pane.object = bokeh_plot_map(gdf, key)
-        global gdf2
-        gdf2 = get_dataset2(name=data_select.value, year=year_slider.value)
+        gdf = get_dataset(name=data_select.value,year=year_slider.value)
+        map_pane.object = bokeh_plot_map(gdf, 'Import')
+
+
+        df_treemap = get_dataset2(name=data_select.value, year=year_slider.value)
+
+        # Reference Maptree: https://discourse.bokeh.org/t/treemap-chart/7907/3
         global figure2
         print(df_gas_treemap)
         figure2 = px.treemap(df_gas_treemap, path=['Continent', 'Partner'], values='Import',
