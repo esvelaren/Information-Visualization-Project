@@ -29,6 +29,12 @@ with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 with open('df_sitc.pickle', 'rb') as handle:
     df_sitc = pickle.load(handle)
+with open('df_natural_gas_exporters.pickle', 'rb') as handle:
+    df_gas_treemap = pickle.load(handle)
+with open('df_oil_petrol_exporters.pickle', 'rb') as handle:
+    df_oil_treemap = pickle.load(handle)
+with open('df_solid_fuel_exporters.pickle', 'rb') as handle:
+    df_solid_treemap = pickle.load(handle)
 gdf.crs = {"init":"epsg:4326"}
 
 sitc = df_sitc.columns.values
