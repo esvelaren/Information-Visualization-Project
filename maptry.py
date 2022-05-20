@@ -144,11 +144,14 @@ def map_dash():
 
         # Reference Maptree: https://discourse.bokeh.org/t/treemap-chart/7907/3
         global figure2
-        print(df_gas_treemap)
-        figure2 = px.treemap(df_gas_treemap, path=['Continent', 'Partner'], values='Import',
-                             color='Partner', hover_data=['Import'],
+        
+        df1 = df_gas_treemap[df_gas_treemap['Year'] == 2020]
+        df1 = df1[df1['Country'] =='EU27_2020' ]
+        print(df1)
+        figure2 = px.treemap(df1, path=['Continent', 'Partner'], values='Import',
+                             color='Partner', hover_data=['Country'],
                              color_continuous_scale='RdBu',
-                             color_continuous_midpoint=np.average(gdf2['Import'], weights=gdf2['Import']))
+                             color_continuous_midpoint=np.average(df1['Import'], weights=df1['Import']))
 
         figure2.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="WhiteSmoke")
         #figure2.update_layout(width=800, height=390, margin=dict(l=10, r=20, b=10, t=50, pad=2))
