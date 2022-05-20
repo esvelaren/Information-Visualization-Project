@@ -29,6 +29,12 @@ with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
 with open('df_sitc.pickle', 'rb') as handle:
     df_sitc = pickle.load(handle)
+with open('df_natural_gas_exporters.pickle', 'rb') as handle:
+    df_gas_treemap = pickle.load(handle)
+with open('df_oil_petrol_exporters.pickle', 'rb') as handle:
+    df_oil_treemap = pickle.load(handle)
+with open('df_solid_fuel_exporters.pickle', 'rb') as handle:
+    df_solid_treemap = pickle.load(handle)
 gdf.crs = {"init":"epsg:4326"}
 
 sitc = df_sitc.columns.values
@@ -138,8 +144,9 @@ def map_dash():
 
         # Reference Maptree: https://discourse.bokeh.org/t/treemap-chart/7907/3
         global figure2
-        figure2 = px.treemap(gdf2, path=['Year', 'Country'], values='Import',
-                             color='Country', hover_data=['Import'],
+        print(df_gas_treemap)
+        figure2 = px.treemap(df_gas_treemap, path=['Continent', 'Partner'], values='Import',
+                             color='Partner', hover_data=['Import'],
                              color_continuous_scale='RdBu',
                              color_continuous_midpoint=np.average(gdf2['Import'], weights=gdf2['Import']))
 
