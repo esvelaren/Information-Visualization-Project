@@ -64,14 +64,12 @@ def get_dataset2(name, year):
         df = df_solid[df_solid['Year'] == year]
     return df
 
-
 datasetname='Natural Gas'
 data,key = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
 fig, ax = plt.subplots(1, figsize=(14, 8))
 data.plot(column=key, cmap='Greens', linewidth=0.8, ax=ax, edgecolor='black')
 ax.axis('off')
 ax.set_title('%s 2000' %datasetname, fontsize=18)
-
 
 def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
@@ -127,9 +125,8 @@ def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=700)
-    # data_select = pnw.Select(name='dataset',options=list(owid.index))
-    data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
-    # year_slider = pnw.IntSlider(start=2000, end=2020, value=2000)
+    data_select = pn.widgets.RadioButtonGroup(name='Select Dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
+    #data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
 
     def update_map(event):
@@ -169,6 +166,5 @@ def map_dash():
     app = pn.Row(l, l2, background='WhiteSmoke')
     app.servable()
     return app
-
 
 app = map_dash()
