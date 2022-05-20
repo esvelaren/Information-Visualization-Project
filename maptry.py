@@ -5,7 +5,7 @@ import matplotlib as mpl
 import pylab as plt
 import numpy as np
 from bokeh.io import output_file, show, output_notebook, export_png
-from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool
+from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
 from bokeh.palettes import Category20
@@ -27,8 +27,6 @@ with open('df_solid_fuel_ru.pickle', 'rb') as handle:
     df_solid = pickle.load(handle)
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
-with open('df_sitc.pickle', 'rb') as handle:
-    df_sitc = pickle.load(handle)
 with open('df_natural_gas_exporters.pickle', 'rb') as handle:
     df_gas_treemap = pickle.load(handle)
 with open('df_oil_petrol_exporters.pickle', 'rb') as handle:
@@ -36,13 +34,6 @@ with open('df_oil_petrol_exporters.pickle', 'rb') as handle:
 with open('df_solid_fuel_exporters.pickle', 'rb') as handle:
     df_solid_treemap = pickle.load(handle)
 gdf.crs = {"init": "epsg:4326"}
-
-sitc = df_sitc.columns.values
-df_sitc = df_sitc.reset_index()
-df_sitc['date'] = df_sitc['date'].astype(str)  # to show it in the x-axis
-source = ColumnDataSource(data=df_sitc)  # data for the graph
-Date = source.data['date']
-source = ColumnDataSource(df_sitc.reset_index())
 
 
 def get_dataset(name, year=None):
@@ -58,7 +49,7 @@ def get_dataset(name, year=None):
     return merged
 
 
-def get_dataset2(name, year, country='EU27_2020'):
+def get_dataset_exp(name, year, country='EU27_2020'):
     global datasetname
     if name == "Natural Gas":
         df = df_gas_treemap[df_gas_treemap['Country'] == country]
@@ -71,6 +62,22 @@ def get_dataset2(name, year, country='EU27_2020'):
         df = df[df['Year'] == year]
 
     df = df[df['Import'] != 0]
+    datasetname = name
+    return df
+
+
+def get_dataset_line(name, year, country='EU27_2020'):
+    global datasetname
+    if name == "Natural Gas":
+        df = df_gas[df_gas['Country'] == country]
+        # df = df[df['Year'] == year]
+    elif name == "Oil Petrol":
+        df = df_oil[df_oil['Country'] == country]
+        # df = df[df['Year'] == year]
+    elif name == "Solid Fuel":
+        df = df_solid[df_solid['Country'] == country]
+        # df = df[df['Year'] == year]
+
     datasetname = name
     return df
 
@@ -127,6 +134,41 @@ def bokeh_plot_map(gdf, column=None, title=''):
     return p
 
 
+def plotly_plot_treemap(df, column=None, title=''):
+    # Ref: https://discourse.bokeh.org/t/treemap-chart/7907/3
+    p = px.treemap(df, path=['Continent', 'Partner'], values=column,
+                   color='Import', hover_data=[column],
+                   color_continuous_scale='Greys',
+                   color_continuous_midpoint=np.average(df[column],
+                                                        weights=df[column]))
+    # print(df_treemap)
+    p.update_layout(width=800, height=390, margin=dict(l=10, r=10, b=10, t=40, pad=2),
+                    paper_bgcolor="WhiteSmoke")
+    return p
+
+
+def bokeh_plot_lines(df, column=None, year=None, title=''):
+    global datasetname
+    if datasetname == "Natural Gas":
+        color = 'green'
+    elif datasetname == "Oil Petrol":
+        color = 'blue'
+    elif datasetname == "Solid Fuel":
+        color = 'orange'
+
+    source = ColumnDataSource(df)
+    p = figure(x_range=(2000, 2020))
+    p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
+    p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
+    p.yaxis.axis_label = 'Dependency on Russia in %'
+    if year is not None:
+        #df = df[df['Year'] == year]
+        source = ColumnDataSource(df.loc[(df.Year == year)])
+        p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
+    p.background_fill_color = "WhiteSmoke"
+    return p
+
+
 # ref.: https://stackoverflow.com/questions/57301630/trigger-event-on-mouseup-instead-of-continuosly-with-panel-slider-widget
 class IntThrottledSlider(pnw.IntSlider):
     value_throttled = param.Integer(default=0)
@@ -136,50 +178,30 @@ def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=700)
-    treemap_pane = pn.pane.plotly
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
-    figure2 = pn.pane.plotly.Plotly(width=800, height=390)
+    treemap_pane = pn.pane.plotly.Plotly(width=800, height=390)
+    lines_pane = pn.pane.Bokeh(height=350, width=800)
 
     def update_map(event):
-        gdf = get_dataset(name=data_select.value, year=year_slider.value)
-        map_pane.object = bokeh_plot_map(gdf, 'Import')
+        df_map = get_dataset(name=data_select.value, year=year_slider.value)
+        map_pane.object = bokeh_plot_map(df_map, column='Import')
 
-        df_treemap = get_dataset2(name=data_select.value, year=year_slider.value)
-        # Reference Maptree: https://discourse.bokeh.org/t/treemap-chart/7907/3
-        # print(df_gas_treemap)
+        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value)
+        treemap_pane.object = plotly_plot_treemap(df_treemap, column='Import')
 
-        figure2.object = px.treemap(df_treemap, path=['Continent', 'Partner'], values='Import',
-                                    color='Import', hover_data=['Import'],
-                                    color_continuous_scale='Greys',
-                                    color_continuous_midpoint=np.average(df_treemap['Import'],
-                                                                         weights=df_treemap['Import']))
-        print(df_treemap)
-        figure2.object.update_layout(width=800, height=390, margin=dict(l=10, r=10, b=10, t=40, pad=2),
-                                     paper_bgcolor="WhiteSmoke")
+        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value)
+        lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
     year_slider.param.trigger('value_throttled')
     data_select.param.watch(update_map, 'value')
 
-    p4 = figure(x_range=Date, height=350, width=800, title="SITC imports by year", background='WhiteSmoke')
-    p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
-                  legend_label=["%s" % x for x in sitc])  # TODO: Problem with the label
-
-    p4.xgrid.grid_line_color = None
-    p4.axis.minor_tick_line_color = None
-    p4.outline_line_color = None
-    p4.legend.location = "top"
-    p4.legend.orientation = "horizontal"
-    p4.background_fill_color = (245, 245, 245)
-    p4.border_fill_color = (245, 245, 245)
-    p4.outline_line_color = (245, 245, 245)
-
     l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane, background='WhiteSmoke')
-    l2 = pn.Column(figure2, p4, background='WhiteSmoke')
+    l2 = pn.Column(treemap_pane, lines_pane, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
     app.servable()
     return app
