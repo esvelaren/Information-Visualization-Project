@@ -131,9 +131,8 @@ def map_dash():  # TODO: maybe change the name of the function
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=700)
-    # data_select = pnw.Select(name='dataset',options=list(owid.index))
-    data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
-    # year_slider = pnw.IntSlider(start=2000, end=2020, value=2000)
+    data_select = pn.widgets.RadioButtonGroup(name='Select Dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
+    #data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
 
     def update_map(event):
