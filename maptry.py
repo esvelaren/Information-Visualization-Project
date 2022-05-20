@@ -48,13 +48,11 @@ def get_dataset(name,year=None):
     global datasetname
     if (name == "Natural Gas"):
         df = df_gas[df_gas['Year'] == year]
-        datasetname='Natural Gas'
     elif (name == "Oil Petrol"):
         df = df_oil[df_oil['Year'] == year]
-        datasetname='Oil Petrol'
     elif (name == "Solid Fuel"):
         df = df_solid[df_solid['Year'] == year]
-        datasetname='Solid Fuel'
+    datasetname = name
     merged = gdf.merge(df, on='Country', how='left')
     return merged
 
@@ -62,20 +60,20 @@ def get_dataset(name,year=None):
 def get_dataset2(name, year, country='EU27_2020'):
     global datasetname
     if (name == "Natural Gas"):
-        df = df_gas[df_gas['Country'] == country]
+        df = df_gas_treemap[df_gas_treemap['Country'] == country]
         df = df[df['Year'] == year]
     elif (name == "Oil Petrol"):
-        df = df_oil[df_oil['Year'] == year]
+        df = df_oil_treemap[df_oil_treemap['Country'] == country]
+        df = df[df['Year'] == year]
     elif (name == "Solid Fuel"):
-        df = df_solid[df_solid['Year'] == year]
+        df = df_solid_treemap[df_solid_treemap['Country'] == country]
+        df = df[df['Year'] == year]
+
+    df = df[df['Import']!=0]
+    datasetname=name
     return df
 
 datasetname='Natural Gas'
-data = get_dataset(datasetname, year=2000) # KEY = COLUMN NAME, DATA = DATA
-fig, ax = plt.subplots(1, figsize=(14, 8))
-data.plot(column='Import', cmap='Greens', linewidth=0.8, ax=ax, edgecolor='black')
-ax.axis('off')
-ax.set_title('%s 2000' %datasetname, fontsize=18)
 
 def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
@@ -134,23 +132,21 @@ def map_dash():
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     #data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
-
+    figure2 = pn.pane.plotly.Plotly(width=800, height=390)
     def update_map(event):
         gdf = get_dataset(name=data_select.value,year=year_slider.value)
         map_pane.object = bokeh_plot_map(gdf, 'Import')
 
-
         df_treemap = get_dataset2(name=data_select.value, year=year_slider.value)
-
         # Reference Maptree: https://discourse.bokeh.org/t/treemap-chart/7907/3
-        global figure2
-        print(df_gas_treemap)
-        figure2 = px.treemap(df_gas_treemap, path=['Continent', 'Partner'], values='Import',
-                             color='Partner', hover_data=['Import'],
+        #print(df_gas_treemap)
+        
+        figure2.object = px.treemap(df_treemap, path=['Continent', 'Partner'], values='Import',
+                             color='Import', hover_data=['Import'],
                              color_continuous_scale='RdBu',
-                             color_continuous_midpoint=np.average(gdf2['Import'], weights=gdf2['Import']))
-
-        figure2.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="WhiteSmoke")
+                             color_continuous_midpoint=np.average(df_treemap['Import'], weights=df_treemap['Import']))
+        print(df_treemap)
+        figure2.object.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="WhiteSmoke")
         #figure2.update_layout(width=800, height=390, margin=dict(l=10, r=20, b=10, t=50, pad=2))
         return
 
