@@ -169,7 +169,9 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
         #df = df[df['Year'] == year]
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
-    p.background_fill_color = "WhiteSmoke"
+    p.background_fill_color = (245, 245, 245)
+    p.border_fill_color = (245, 245, 245)
+    p.outline_line_color = (245, 245, 245)
     return p
 
 
