@@ -284,12 +284,12 @@ def map_dash():
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
 
-    l = pn.Column(pn.Row(data_select, pn.Spacer(width=20), year_slider, pn.Spacer(width=20),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, background='WhiteSmoke')
+    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,background='WhiteSmoke')
     l.aspect_ratio = 1.3
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
-    l3 = pn.Row(l, l2, background='WhiteSmoke')
-    app = pn.Column(l3, df_widget, background='WhiteSmoke')
+    app = pn.Row(l, l2, background='WhiteSmoke')
+    #app = pn.Column(l3, background='WhiteSmoke')
 
     app.sizing_mode = "stretch_height"
     app.servable()
