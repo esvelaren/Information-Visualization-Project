@@ -233,7 +233,7 @@ map_pane = None
 def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
-    map_pane = pn.pane.Bokeh(width=850, height=600)
+    map_pane = pn.pane.Bokeh(width=900, height=650)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
@@ -284,7 +284,7 @@ def map_dash():
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
-
+    df_widget.sizing_mode = "stretch_width"
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,tableTitle,background='WhiteSmoke')
     l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
