@@ -48,7 +48,6 @@ def get_dataset(name, year=None):
     merged = gdf.merge(df, on='Country', how='left')
     return merged
 
-
 def get_dataset_exp(name, year, country='EU27_2020'):
     global datasetname
     if name == "Natural Gas":
@@ -64,7 +63,6 @@ def get_dataset_exp(name, year, country='EU27_2020'):
     df = df[df['Import'] != 0]
     datasetname = name
     return df
-
 
 def get_dataset_line(name, year, country='EU27_2020'):
     global datasetname
@@ -84,21 +82,27 @@ def get_dataset_line(name, year, country='EU27_2020'):
 
 datasetname = 'Natural Gas'
 
-
 def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
     json_data = json.dumps(json.loads(gdf.to_json()))
     return GeoJSONDataSource(geojson=json_data)
 
-
 # Define custom tick labels for color bar.
 tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
 
+sel_country = None
+def selected_country(attr, old, new):
+    global sel_country
+    sel_country = gdf._get_value(new[0], 'Country')
+    print(sel_country)
+    
 
 def bokeh_plot_map(gdf, column=None, title=''):
     """Plot bokeh map from GeoJSONDataSource """
     global datasetname
     geosource = get_geodatasource(gdf)
+    geosource.selected.on_change('indices', selected_country)
+    # geosource.selected.
     if datasetname == "Natural Gas":
         palette = brewer['Greens'][8]
     elif datasetname == "Oil Petrol":
@@ -116,8 +120,8 @@ def bokeh_plot_map(gdf, column=None, title=''):
                          location=(0, 0), orientation='vertical', border_line_color=None,
                          major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
-    tools = 'wheel_zoom,pan,reset,hover'
-    p = figure(title=title, plot_height=400, plot_width=850, toolbar_location='right', tools=tools)
+    tools = 'wheel_zoom,pan,reset,hover,tap'
+    p = figure(title=title, plot_height=400, plot_width=850, toolbar_location='below', tools=tools)
     p.xaxis.visible = False
     p.yaxis.visible = False
     p.xgrid.grid_line_color = None
