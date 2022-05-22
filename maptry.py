@@ -35,6 +35,10 @@ with open('df_solid_fuel_exporters.pickle', 'rb') as handle:
     df_solid_treemap = pickle.load(handle)
 gdf.crs = {"init": "epsg:4326"}
 
+# Getting a list of countries:
+countries = list(df_gas['Country'].unique())
+dropdown_country = pn.widgets.Select(name='Select', options=countries)
+
 
 def get_dataset(name, year=None):
     global datasetname
@@ -90,10 +94,11 @@ def get_geodatasource(gdf):
 # Define custom tick labels for color bar.
 tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
 
-sel_country = None
+sel_country = 'EU27_2020'
 def selected_country(attr, old, new):
     global sel_country
     sel_country = gdf._get_value(new[0], 'Country')
+    dropdown_country.value = sel_country
     print(sel_country)
     
 
@@ -120,7 +125,7 @@ def bokeh_plot_map(gdf, column=None, title=''):
                          location=(0, 0), orientation='vertical', border_line_color=None,
                          major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
-    tools = 'wheel_zoom,pan,reset,hover'
+    tools = 'wheel_zoom,pan,reset,hover,tap'
     p = figure(title=title, plot_height=300, plot_width=650, toolbar_location='right', tools=tools)
     p.xaxis.visible = False
     p.yaxis.visible = False
@@ -174,6 +179,35 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
     p.outline_line_color = (245, 245, 245)
     return p
 
+def bokeh_plot_multilines(df, column=None, year=None, title=''):
+    global datasetname
+    if datasetname == "Natural Gas":
+        color = 'green'
+        df_main = df_gas
+    elif datasetname == "Oil Petrol":
+        color = 'blue'
+        df_main = df_oil
+    elif datasetname == "Solid Fuel":
+        color = 'orange'
+        df_main = df_solid
+
+    source = ColumnDataSource(df)
+    p = figure(x_range=(2000, 2020))
+
+    p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
+
+    p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
+    p.yaxis.axis_label = 'Dependency on Russia in %'
+    for country in countries:
+        p.line(x='Year', y=column, line_color='gray', source=ColumnDataSource())
+
+    if year is not None:
+        #df = df[df['Year'] == year]
+        source = ColumnDataSource(df.loc[(df.Year == year)])
+        p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
+    p.background_fill_color = "WhiteSmoke"
+    return p
+
 
 # ref.: https://stackoverflow.com/questions/57301630/trigger-event-on-mouseup-instead-of-continuosly-with-panel-slider-widget
 class IntThrottledSlider(pnw.IntSlider):
@@ -184,30 +218,33 @@ def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=650)
-    
+
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
+    # dropdown_country = pn.widgets.Select(name='Select', options=countries)
     treemap_pane = pn.pane.plotly.Plotly(width=790, height=380)
     lines_pane = pn.pane.Bokeh(height=250, width=790)
 
     def update_map(event):
-        df_map = get_dataset(name=data_select.value, year=year_slider.value)
-        map_pane.object = bokeh_plot_map(df_map, column='Import')
+        if str(event.obj)[:6] != 'Select':
+            df_map = get_dataset(name=data_select.value, year=year_slider.value)
+            map_pane.object = bokeh_plot_map(df_map, column='Import')
 
-        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value)
+        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         treemap_pane.object = plotly_plot_treemap(df_treemap, column='Import')
 
-        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value)
+        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
     year_slider.param.trigger('value_throttled')
     data_select.param.watch(update_map, 'value')
+    dropdown_country.param.watch(update_map, 'value')
 
-    
+
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
@@ -219,7 +256,7 @@ def map_dash():
     l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane,  mapTitle , background='WhiteSmoke')
     l2 = pn.Column( mainTitle ,treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
-    
+
     app.sizing_mode = "stretch_height"
     app.servable()
     return app
