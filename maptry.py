@@ -289,7 +289,7 @@ def map_dash():
     lines_pane.sizing_mode = "stretch_both"
     df_widget.sizing_mode = "stretch_width"
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,tableTitle,background='WhiteSmoke')
-    l.aspect_ratio = 1.2
+    #l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
