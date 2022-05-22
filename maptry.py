@@ -243,7 +243,7 @@ def map_dash():
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
     df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
-    df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
+    df_widget = pn.widgets.DataFrame(df_table, name='DataFrame',margin=(0, 55, 0, 0))
     #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
     def update_map(event):
         global replot
