@@ -242,12 +242,11 @@ def map_dash():
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
     lines_pane = pn.pane.Bokeh(height=220, width=780)
 
-    df_table = pd.DataFrame({'int': [1, 2, 3], 'float': [3.14, 6.28, 9.42], 'str': ['A', 'B', 'C'], 'bool': [True, False, True]}, index=[1, 2, 3])
+    df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
     df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
     #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
     def update_map(event):
         global replot
-        global df_widget
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
@@ -266,7 +265,7 @@ def map_dash():
         country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
         # print("Selected Country: ",sel_country)
         # print("Selected Year:", year_slider.value)
-        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]})
+        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
         df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
         # df = df[df['Year'] == year]
         return
