@@ -140,7 +140,7 @@ def bokeh_plot_map(gdf, column=None, title=''):
                          major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
     tools = 'wheel_zoom,pan,reset,hover,tap'
-    p = figure(title=title, plot_height=300, plot_width=650, toolbar_location='right', tools=tools)
+    p = figure(title=title, plot_height=250, plot_width=600, toolbar_location='right', tools=tools)
     p.xaxis.visible = False
     p.yaxis.visible = False
     p.xgrid.grid_line_color = None
@@ -233,14 +233,14 @@ map_pane = None
 def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
-    map_pane = pn.pane.Bokeh(width=900, height=650)
+    map_pane = pn.pane.Bokeh(width=850, height=600)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
     dropdown_country.value = sel_country
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
-    lines_pane = pn.pane.Bokeh(height=220, width=780)
+    lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
     df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
     df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
@@ -278,17 +278,18 @@ def map_dash():
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(245, 245, 245), style={'font-family': "serif"})
 
-    map_pane.sizing_mode = "stretch_height"
-    lines_pane.sizing_mode = "stretch_height"
+    map_pane.sizing_mode = "stretch_both"
+    lines_pane.sizing_mode = "stretch_both"
 
-    l = pn.Column(pn.Row(data_select, pn.Spacer(width=20), year_slider, pn.Spacer(width=20),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, background='WhiteSmoke')
-    l.aspect_ratio = 1.3
+    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,tableTitle,background='WhiteSmoke')
+    l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
-    l3 = pn.Row(l, l2, background='WhiteSmoke')
-    app = pn.Column(l3, df_widget, background='WhiteSmoke')
+    app = pn.Row(l, l2, background='WhiteSmoke')
+    #app = pn.Column(l3, background='WhiteSmoke')
 
     app.sizing_mode = "stretch_height"
     app.servable()
