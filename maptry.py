@@ -279,7 +279,7 @@ def map_dash():
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(245, 245, 245), style={'font-family': "serif"})
+    mainTitle = pn.pane.Markdown('# Russian Resource Influence Over Europe',  background=(245, 245, 245), style={'font-family': "serif"})
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
