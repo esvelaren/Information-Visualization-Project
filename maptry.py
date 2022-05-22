@@ -7,6 +7,7 @@ import pylab as plt
 import numpy as np
 from bokeh.io import output_file, show, output_notebook, export_png
 from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d, Selection
+from bokeh.models.widgets import DataTable
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
 from bokeh.palettes import Category20
@@ -232,7 +233,7 @@ map_pane = None
 
 def map_dash():
     """Map dashboard"""
-    from bokeh.models.widgets import DataTable
+    
     map_pane = pn.pane.Bokeh(width=900, height=650)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
@@ -244,9 +245,10 @@ def map_dash():
 
     df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
     df_widget = pn.widgets.DataFrame(df_table, name='DataFrame',margin=(0, 55, 0, 0))
-    #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
+
     def update_map(event):
         global replot
+        global df_widget
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
@@ -263,6 +265,8 @@ def map_dash():
 
         country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
         country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
+        print('country_rel ',country_rel)
+        print('country_abs ',country_abs)
         # print("Selected Country: ",sel_country)
         # print("Selected Year:", year_slider.value)
         df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
@@ -279,7 +283,7 @@ def map_dash():
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mainTitle = pn.pane.Markdown('# Russian Resource Influence Over Europe',  background=(245, 245, 245), style={'font-family': "serif"})
+    mainTitle = pn.pane.Markdown('### Russian Resource Influence Over Europe',  background=(245, 245, 245), style={'font-family': "serif"})
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
