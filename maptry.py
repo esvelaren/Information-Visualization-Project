@@ -89,7 +89,6 @@ def get_dataset_line(name, year, country='EU27_2020'):
 
 datasetname = 'Natural Gas'
 
-
 def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
     json_data = json.dumps(json.loads(gdf.to_json()))
@@ -100,6 +99,7 @@ def get_geodatasource(gdf):
 tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
 
 sel_country = 'EU27_2020'
+year = 2000
 replot = False
 
 
@@ -113,8 +113,7 @@ def selected_country(attr, old, new):
         replot = True
         dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of list
         dropdown_country.value = 'EU27_2020'
-    print(sel_country)
-
+    # print(sel_country)
 
 def bokeh_plot_map(gdf, column=None, title=''):
     """Plot bokeh map from GeoJSONDataSource """
@@ -229,6 +228,7 @@ def bokeh_plot_multilines(df, column=None, year=None, title=''):
 class IntThrottledSlider(pnw.IntSlider):
     value_throttled = param.Integer(default=0)
 
+map_pane = None
 
 def map_dash():
     """Map dashboard"""
@@ -242,9 +242,12 @@ def map_dash():
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
+    df_table = pd.DataFrame({'int': [1, 2, 3], 'float': [3.14, 6.28, 9.42], 'str': ['A', 'B', 'C'], 'bool': [True, False, True]}, index=[1, 2, 3])
+    df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
+    #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
     def update_map(event):
         global replot
-        print(replot)
+        global df_widget
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
@@ -258,6 +261,14 @@ def map_dash():
 
         df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
+
+        country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
+        country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
+        # print("Selected Country: ",sel_country)
+        # print("Selected Year:", year_slider.value)
+        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]})
+        df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
+        # df = df[df['Year'] == year]
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
@@ -277,11 +288,11 @@ def map_dash():
     l.aspect_ratio = 1.3
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
-    l2.sizing_mode = "stretch_width"
-    app = pn.Row(l, l2, background='WhiteSmoke')
+    l3 = pn.Row(l, l2, background='WhiteSmoke')
+    app = pn.Column(l3, df_widget, background='WhiteSmoke')
+
     app.sizing_mode = "stretch_height"
     app.servable()
     return app
-
 
 app = map_dash()
