@@ -52,6 +52,7 @@ def get_dataset(name, year=None):
     merged = gdf.merge(df, on='Country', how='left')
     return merged
 
+
 def get_dataset_exp(name, year, country='EU27_2020'):
     global datasetname
     if name == "Natural Gas":
@@ -67,6 +68,7 @@ def get_dataset_exp(name, year, country='EU27_2020'):
     df = df[df['Import'] != 0]
     datasetname = name
     return df
+
 
 def get_dataset_line(name, year, country='EU27_2020'):
     global datasetname
@@ -86,21 +88,31 @@ def get_dataset_line(name, year, country='EU27_2020'):
 
 datasetname = 'Natural Gas'
 
+
 def get_geodatasource(gdf):
     """Get getjsondatasource from geopandas object"""
     json_data = json.dumps(json.loads(gdf.to_json()))
     return GeoJSONDataSource(geojson=json_data)
 
+
 # Define custom tick labels for color bar.
 tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
 
 sel_country = 'EU27_2020'
+replot = False
+
+
+# Ref: https://stackoverflow.com/questions/50478223/bokeh-taptool-return-selected-index
 def selected_country(attr, old, new):
-    global sel_country
+    global sel_country, replot
     sel_country = gdf._get_value(new[0], 'Country')
-    dropdown_country.value = sel_country
+    if sel_country in countries:
+        dropdown_country.value = sel_country
+        replot = True
+    else:
+        dropdown_country.value = 'EU27_2020'
     print(sel_country)
-    
+
 
 def bokeh_plot_map(gdf, column=None, title=''):
     """Plot bokeh map from GeoJSONDataSource """
@@ -171,13 +183,14 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
     p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
     p.yaxis.axis_label = 'Dependency on Russia in %'
     if year is not None:
-        #df = df[df['Year'] == year]
+        # df = df[df['Year'] == year]
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = (245, 245, 245)
     p.border_fill_color = (245, 245, 245)
     p.outline_line_color = (245, 245, 245)
     return p
+
 
 def bokeh_plot_multilines(df, column=None, year=None, title=''):
     global datasetname
@@ -202,7 +215,7 @@ def bokeh_plot_multilines(df, column=None, year=None, title=''):
         p.line(x='Year', y=column, line_color='gray', source=ColumnDataSource())
 
     if year is not None:
-        #df = df[df['Year'] == year]
+        # df = df[df['Year'] == year]
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = "WhiteSmoke"
@@ -228,9 +241,11 @@ def map_dash():
     lines_pane = pn.pane.Bokeh(height=250, width=790)
 
     def update_map(event):
-        if str(event.obj)[:6] != 'Select':
+        global replot
+        if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
+            replot = False
 
         df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         treemap_pane.object = plotly_plot_treemap(df_treemap, column='Import')
@@ -244,7 +259,6 @@ def map_dash():
     data_select.param.watch(update_map, 'value')
     dropdown_country.param.watch(update_map, 'value')
 
-
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
@@ -253,10 +267,10 @@ def map_dash():
     map_pane.sizing_mode = "stretch_height"
     lines_pane.sizing_mode = "stretch_height"
 
-    l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane,  mapTitle , background='WhiteSmoke')
-    l.aspect_ratio=1.3
-    l.sizing_mode="scale_width"
-    l2 = pn.Column( mainTitle ,treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
+    l = pn.Column(pn.Row(data_select, year_slider, dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, background='WhiteSmoke')
+    l.aspect_ratio = 1.3
+    l.sizing_mode = "scale_width"
+    l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
 
     app.sizing_mode = "stretch_height"
