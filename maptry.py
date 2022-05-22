@@ -117,7 +117,7 @@ def bokeh_plot_map(gdf, column=None, title=''):
                          major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
     tools = 'wheel_zoom,pan,reset,hover'
-    p = figure(title=title, plot_height=400, plot_width=850, toolbar_location='right', tools=tools)
+    p = figure(title=title, plot_height=300, plot_width=650, toolbar_location='right', tools=tools)
     p.xaxis.visible = False
     p.yaxis.visible = False
     p.xgrid.grid_line_color = None
@@ -142,8 +142,8 @@ def plotly_plot_treemap(df, column=None, title=''):
                    color_continuous_midpoint=np.average(df[column],
                                                         weights=df[column]))
     # print(df_treemap)
-    p.update_layout(width=800, height=390, margin=dict(l=10, r=10, b=10, t=40, pad=2),
-                    paper_bgcolor="WhiteSmoke")
+    p.update_layout( margin=dict(l=20, r=5, b=1, t=5, pad=2),
+                    paper_bgcolor="brown")
     return p
 
 
@@ -166,7 +166,7 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = (245, 245, 245)
-    p.border_fill_color = (245, 245, 245)
+    p.border_fill_color = (245, 205, 245)
     p.outline_line_color = (245, 245, 245)
     return p
 
@@ -179,13 +179,14 @@ class IntThrottledSlider(pnw.IntSlider):
 def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
-    map_pane = pn.pane.Bokeh(width=900, height=700)
+    map_pane = pn.pane.Bokeh(width=900, height=650)
+    
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
-    treemap_pane = pn.pane.plotly.Plotly(width=800, height=390)
-    lines_pane = pn.pane.Bokeh(height=350, width=800)
+    treemap_pane = pn.pane.plotly.Plotly(width=790, height=380)
+    lines_pane = pn.pane.Bokeh(height=250, width=790)
 
     def update_map(event):
         df_map = get_dataset(name=data_select.value, year=year_slider.value)
@@ -202,9 +203,20 @@ def map_dash():
     year_slider.param.trigger('value_throttled')
     data_select.param.watch(update_map, 'value')
 
-    l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane, background='WhiteSmoke')
-    l2 = pn.Column(treemap_pane, lines_pane, background='WhiteSmoke')
+    
+    treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(205, 245, 245), style={'font-family': "serif"})
+
+    map_pane.sizing_mode = "stretch_height"
+    lines_pane.sizing_mode = "stretch_height"
+
+    l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane,  mapTitle , background='WhiteSmoke')
+    l2 = pn.Column( mainTitle ,treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
+    
+    app.sizing_mode = "stretch_height"
     app.servable()
     return app
 
