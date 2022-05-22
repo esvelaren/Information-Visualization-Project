@@ -239,8 +239,8 @@ def map_dash():
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
     dropdown_country.value = sel_country
-    treemap_pane = pn.pane.plotly.Plotly(width=790, height=380)
-    lines_pane = pn.pane.Bokeh(height=250, width=790)
+    treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
+    lines_pane = pn.pane.Bokeh(height=220, width=780)
 
     def update_map(event):
         global replot
@@ -279,7 +279,6 @@ def map_dash():
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     l2.sizing_mode = "stretch_width"
     app = pn.Row(l, l2, background='WhiteSmoke')
-
     app.sizing_mode = "stretch_height"
     app.servable()
     return app
