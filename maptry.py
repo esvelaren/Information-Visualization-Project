@@ -1,3 +1,4 @@
+from turtle import width
 import pandas as pd
 import geopandas as gpd
 import json
@@ -37,7 +38,7 @@ gdf.crs = {"init": "epsg:4326"}
 
 # Getting a list of countries:
 countries = list(df_gas['Country'].unique())
-dropdown_country = pn.widgets.Select(name='Select', options=countries)
+dropdown_country = pn.widgets.Select(name='Select', options=countries, width = 130)
 
 
 def get_dataset(name, year=None):
@@ -271,6 +272,7 @@ def map_dash():
     l.aspect_ratio = 1.3
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
+    l2.sizing_mode = "stretch_width"
     app = pn.Row(l, l2, background='WhiteSmoke')
 
     app.sizing_mode = "stretch_height"
