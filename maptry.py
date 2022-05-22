@@ -242,7 +242,7 @@ def map_dash():
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
-    df_table = pd.DataFrame({'int': [1, 2, 3], 'float': [3.14, 6.28, 9.42], 'str': ['A', 'B', 'C'], 'bool': [True, False, True]}, index=[1, 2, 3])
+    df_table = pd.DataFrame({'int': [1], 'float': [3.14], 'str': ['A'], 'bool': [True]}, index=[1])
     df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
     #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
     def update_map(event):
@@ -279,13 +279,14 @@ def map_dash():
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(245, 245, 245), style={'font-family': "serif"})
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
 
-    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,background='WhiteSmoke')
-    l.aspect_ratio = 1.3
+    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,tableTitle,background='WhiteSmoke')
+    l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
