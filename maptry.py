@@ -92,10 +92,10 @@ tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '1
 
 sel_country = None
 def selected_country(attr, old, new):
+    
     global sel_country
     sel_country = gdf._get_value(new[0], 'Country')
     print(sel_country)
-    
 
 def bokeh_plot_map(gdf, column=None, title=''):
     """Plot bokeh map from GeoJSONDataSource """
@@ -179,10 +179,12 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
 class IntThrottledSlider(pnw.IntSlider):
     value_throttled = param.Integer(default=0)
 
+map_pane = None
 
 def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
+    global map_pane
     map_pane = pn.pane.Bokeh(width=900, height=700)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
@@ -191,7 +193,11 @@ def map_dash():
     treemap_pane = pn.pane.plotly.Plotly(width=800, height=390)
     lines_pane = pn.pane.Bokeh(height=350, width=800)
 
+    df_table = pd.DataFrame({'int': [1, 2, 3], 'float': [3.14, 6.28, 9.42], 'str': ['A', 'B', 'C'], 'bool': [True, False, True]}, index=[1, 2, 3])
+    df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
+    #table = pn.widgets.DataFrame(df_gas[0], autosize_mode='fit_columns', width=300)
     def update_map(event):
+        
         df_map = get_dataset(name=data_select.value, year=year_slider.value)
         map_pane.object = bokeh_plot_map(df_map, column='Import')
 
@@ -200,6 +206,14 @@ def map_dash():
 
         df_lines = get_dataset_line(name=data_select.value, year=year_slider.value)
         lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
+
+        df_single_country = df_map[df_map['Country'] == sel_country]
+        df_single_country = df_single_country[df_single_country['Year'] == year_slider.value]
+        # idf = df_single_country.interactive()
+        print(df_single_country)
+
+        df_widget = pn.widgets.DataFrame(df_single_country, name='DataFrame')
+        # df = df[df['Year'] == year]
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
@@ -208,9 +222,9 @@ def map_dash():
 
     l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane, background='WhiteSmoke')
     l2 = pn.Column(treemap_pane, lines_pane, background='WhiteSmoke')
-    app = pn.Row(l, l2, background='WhiteSmoke')
+    l3 = pn.Row(l, l2, background='WhiteSmoke')
+    app = pn.Column(l3, df_widget, background='WhiteSmoke')
     app.servable()
     return app
-
 
 app = map_dash()
