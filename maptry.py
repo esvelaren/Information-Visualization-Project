@@ -152,7 +152,7 @@ def plotly_plot_treemap(df, column=None, title=''):
                                                         weights=df[column]))
     # print(df_treemap)
     p.update_layout( margin=dict(l=20, r=5, b=1, t=5, pad=2),
-                    paper_bgcolor="brown")
+                    paper_bgcolor="WhiteSmoke")
     return p
 
 
@@ -175,7 +175,7 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = (245, 245, 245)
-    p.border_fill_color = (245, 205, 245)
+    p.border_fill_color = (245, 245, 245)
     p.outline_line_color = (245, 245, 245)
     return p
 
@@ -248,12 +248,14 @@ def map_dash():
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(205, 245, 245), style={'font-family': "serif"})
+    mainTitle = pn.pane.Markdown('### A serif Markdown heading',  background=(245, 245, 245), style={'font-family': "serif"})
 
     map_pane.sizing_mode = "stretch_height"
     lines_pane.sizing_mode = "stretch_height"
 
     l = pn.Column(pn.Row(data_select, year_slider, background='WhiteSmoke'), map_pane,  mapTitle , background='WhiteSmoke')
+    l.aspect_ratio=1.3
+    l.sizing_mode="scale_width"
     l2 = pn.Column( mainTitle ,treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
 
