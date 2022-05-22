@@ -6,7 +6,7 @@ import matplotlib as mpl
 import pylab as plt
 import numpy as np
 from bokeh.io import output_file, show, output_notebook, export_png
-from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d
+from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d, Selection
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
 from bokeh.palettes import Category20
@@ -109,8 +109,9 @@ def selected_country(attr, old, new):
     sel_country = gdf._get_value(new[0], 'Country')
     if sel_country in countries:
         dropdown_country.value = sel_country
-        replot = True
     else:
+        replot = True
+        dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of list
         dropdown_country.value = 'EU27_2020'
     print(sel_country)
 
@@ -120,7 +121,8 @@ def bokeh_plot_map(gdf, column=None, title=''):
     global datasetname
     geosource = get_geodatasource(gdf)
     geosource.selected.on_change('indices', selected_country)
-    # geosource.selected.
+    if replot is False:
+        geosource.selected.indices = gdf.index[gdf['Country'] == sel_country].tolist()
     if datasetname == "Natural Gas":
         palette = brewer['Greens'][8]
     elif datasetname == "Oil Petrol":
@@ -181,7 +183,7 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
     source = ColumnDataSource(df)
     p = figure(x_range=(2000, 2020))
     p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
-    p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
+    p.y_range = Range1d(start=0, end=110)
     p.yaxis.axis_label = 'Dependency on Russia in %'
     if year is not None:
         # df = df[df['Year'] == year]
@@ -232,20 +234,23 @@ def map_dash():
     """Map dashboard"""
     from bokeh.models.widgets import DataTable
     map_pane = pn.pane.Bokeh(width=900, height=650)
-
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
-    # dropdown_country = pn.widgets.Select(name='Select', options=countries)
+    dropdown_country.value = sel_country
     treemap_pane = pn.pane.plotly.Plotly(width=790, height=380)
     lines_pane = pn.pane.Bokeh(height=250, width=790)
 
     def update_map(event):
         global replot
+        print(replot)
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
+            #geosource.selected = Selection(indices=gdf.index[gdf['Country'] == sel_country].tolist())
+            #if replot is False:
+            #    geosource.selected.indices = gdf.index[gdf['Country'] == sel_country].tolist()
             replot = False
 
         df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
