@@ -1,24 +1,25 @@
-# Required modules
-import pickle
 from turtle import width
 import pandas as pd
-import numpy as np
-import geopandas as gdp
+import geopandas as gpd
 import json
-from bokeh.io import curdoc
+import matplotlib as mpl
+import pylab as plt
+import numpy as np
+from bokeh.io import output_file, show, output_notebook, export_png
+from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d, Selection
+from bokeh.models.widgets.tables import NumberFormatter
+from bokeh.models.widgets import DataTable
 from bokeh.plotting import figure
-from bokeh.transform import cumsum
-from bokeh.models import GeoJSONDataSource, LinearColorMapper, ColorBar, Slider, HoverTool, ColumnDataSource, \
-    RadioButtonGroup
 from bokeh.palettes import brewer
 from bokeh.palettes import Category20
-from bokeh.layouts import widgetbox, row, column
-import plotly.express as px
-import numpy as np
-from io import StringIO
-from bokeh.models import Button
 import panel as pn
-dz=0
+import panel.widgets as pnw
+import plotly.express as px
+import pickle
+import param
+
+pn.extension('plotly')
+pn.extension('tabulator', css_files=[pn.io.resources.CSS_URLS['font-awesome']])
 
 # Loading pickles:
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
@@ -30,247 +31,278 @@ with open('df_solid_fuel_ru.pickle', 'rb') as handle:
     df_solid = pickle.load(handle)
 with open('gdf.pickle', 'rb') as handle:
     gdf = pickle.load(handle)
-with open('df_sitc.pickle', 'rb') as handle:
-    df_sitc = pickle.load(handle)
+with open('df_natural_gas_exporters.pickle', 'rb') as handle:
+    df_gas_treemap = pickle.load(handle)
+with open('df_oil_petrol_exporters.pickle', 'rb') as handle:
+    df_oil_treemap = pickle.load(handle)
+with open('df_solid_fuel_exporters.pickle', 'rb') as handle:
+    df_solid_treemap = pickle.load(handle)
+gdf.crs = {"init": "epsg:4326"}
+
+# Getting a list of countries:
+countries = list(df_gas['Country'].unique())
+dropdown_country = pn.widgets.Select(name='Select', options=countries, width = 130)
 
 
-# with open('df_gas.pickle', 'rb') as handle:
-#    df_gas2 = pickle.load(handle)
-
-# Function to match the 2 tables at the year selected in the slider
-def json_data_selector(selectedYear):
-    yr = selectedYear
-    df_yr = df_gas[df_gas['Year'] == yr]
-    merged = gdf.merge(df_yr, on='Country', how='left')  # how='left'
-    # merged.fillna('No data', inplace = True)
-    merged_json = json.loads(merged.to_json())
-    json_data = json.dumps(merged_json)
-    return json_data
-
-def values(yr):
-    df_yr = df_gas[df_gas['Year'] == yr]
-    #print(df_yr)
-    return df_yr
-
-# Input GeoJSON source that contains features for plotting.
-geosource = GeoJSONDataSource(geojson=json_data_selector(2000))
+def get_dataset(name, year=None):
+    global datasetname
+    if name == "Natural Gas":
+        df = df_gas[df_gas['Year'] == year]
+    elif name == "Oil Petrol":
+        df = df_oil[df_oil['Year'] == year]
+    elif name == "Solid Fuel":
+        df = df_solid[df_solid['Year'] == year]
+    datasetname = name
+    merged = gdf.merge(df, on='Country', how='left')
+    return merged
 
 
+def get_dataset_exp(name, year, country='EU27_2020'):
+    global datasetname
+    if name == "Natural Gas":
+        df = df_gas_treemap[df_gas_treemap['Country'] == country]
+        df = df[df['Year'] == year]
+    elif name == "Oil Petrol":
+        df = df_oil_treemap[df_oil_treemap['Country'] == country]
+        df = df[df['Year'] == year]
+    elif name == "Solid Fuel":
+        df = df_solid_treemap[df_solid_treemap['Country'] == country]
+        df = df[df['Year'] == year]
 
-# Define a sequential multi-hue color palette.
+    df = df[df['Import'] != 0]
+    datasetname = name
+    return df
 
-palette = brewer['Greens'][8]
-# Reverse color order so that dark blue is highest obesity.
-palette = palette[::-1]
-# Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors. Input nan_color.
-# TODO Change High Range
-color_mapper = LinearColorMapper(palette=palette, low=0.00, high=100.000, nan_color='#d9d9d9')
+
+def get_dataset_line(name, year, country='EU27_2020'):
+    global datasetname
+    if name == "Natural Gas":
+        df = df_gas[df_gas['Country'] == country]
+        # df = df[df['Year'] == year]
+    elif name == "Oil Petrol":
+        df = df_oil[df_oil['Country'] == country]
+        # df = df[df['Year'] == year]
+    elif name == "Solid Fuel":
+        df = df_solid[df_solid['Country'] == country]
+        # df = df[df['Year'] == year]
+
+    datasetname = name
+    return df
+
+
+datasetname = 'Natural Gas'
+
+# Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
+def get_geodatasource(gdf):
+    """Get getjsondatasource from geopandas object"""
+    json_data = json.dumps(json.loads(gdf.to_json()))
+    return GeoJSONDataSource(geojson=json_data)
+
+
 # Define custom tick labels for color bar.
-tick_labels = {'5000': '5000', }
-# Add hover tool
+tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
+
+sel_country = 'EU27_2020'
+year = 2000
+replot = False
 
 
-     
-hover = HoverTool(tooltips=[('Country: ', '@Country'),
-                            ('Russian Natural Gas Import', '@Import')])
-# Create color bar.
+def selected_country(attr, old, new):
+    global sel_country, replot
+    sel_country = gdf._get_value(new[0], 'Country')
+    if sel_country in countries:
+        dropdown_country.value = sel_country
+    else:
+        replot = True
+        dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of list
+        dropdown_country.value = 'EU27_2020'
+    # print(sel_country)
+
+# Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
+def bokeh_plot_map(gdf, column=None):
+    """Plot bokeh map from GeoJSONDataSource """
+    global datasetname
+    geosource = get_geodatasource(gdf)
+    geosource.selected.on_change('indices', selected_country)
+    if replot is False:
+        geosource.selected.indices = gdf.index[gdf['Country'] == sel_country].tolist()
+    if datasetname == "Natural Gas":
+        palette = brewer['Greens'][8]
+    elif datasetname == "Oil Petrol":
+        palette = brewer['Blues'][8]
+    elif datasetname == "Solid Fuel":
+        palette = brewer['Oranges'][8]
+    palette = palette[::-1]
+    vals = gdf[column]
+
+    hover = HoverTool(tooltips=[('Country: ', '@Country'),
+                                ('Russian {} Import'.format(datasetname), '@Import')])
+    # Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
+    color_mapper = LinearColorMapper(palette=palette, low=0, high=100)
+    color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, height=660, width=20,
+                         location=(0, 0), orientation='vertical', border_line_color=None,
+                         major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
+
+    tools = 'wheel_zoom,pan,reset,hover,tap'
+    p = figure(title='', plot_height=250, plot_width=600, toolbar_location='right', tools=tools)
+    p.xaxis.visible = False
+    p.yaxis.visible = False
+    p.xgrid.grid_line_color = None
+    p.ygrid.grid_line_color = None
+    p.background_fill_color = (245, 245, 245)
+    p.border_fill_color = (245, 245, 245)
+    p.outline_line_color = (245, 245, 245)
+    # Add patch renderer to figure
+    p.patches('xs', 'ys', source=geosource, fill_alpha=1, line_width=0.5, line_color='black',
+              fill_color={'field': column, 'transform': color_mapper})
+    # Specify figure layout.
+    p.add_layout(color_bar, 'right')
+    p.add_tools(hover)
+    return p
+
+# Ref: https://plotly.com/python/treemaps/
+def plotly_plot_treemap(df, column=None, title=''):
+    # Ref: https://discourse.bokeh.org/t/treemap-chart/7907/3
+    p = px.treemap(df, path=['Continent', 'Partner'], values=column,
+                   color='Import', hover_data=[column],
+                   color_continuous_scale='Greys',
+                   color_continuous_midpoint=np.average(df[column],
+                                                        weights=df[column]))
+    # print(df_treemap)
+    p.update_layout( margin=dict(l=20, r=5, b=1, t=5, pad=2),
+                    paper_bgcolor="WhiteSmoke")
+    return p
 
 
-color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, width=20, height=660,
-                     border_line_color=None, location=(0, 0), orientation='vertical', major_label_overrides=tick_labels)
-# Create figure object.
-p = figure(title='Russian export influence over Europe: Natural Gas', plot_height=700, plot_width=850,
-           toolbar_location=None, tools=[hover])
-p.xaxis.visible = False
-p.yaxis.visible = False
-p.xgrid.grid_line_color = None
-p.ygrid.grid_line_color = None
+def bokeh_plot_lines(df, column=None, year=None, title=''):
+    global datasetname
+    if datasetname == "Natural Gas":
+        color = 'green'
+    elif datasetname == "Oil Petrol":
+        color = 'blue'
+    elif datasetname == "Solid Fuel":
+        color = 'orange'
 
-# Add patch renderer to figure (for the map)
-p.patches('xs', 'ys', source=geosource, fill_color={'field': 'Import', 'transform': color_mapper},
-          line_color='black', line_width=0.5, fill_alpha=1)
-# Specify layout
-p.add_layout(color_bar, 'right')
-p.add_tools(hover)
-
-option = "Natural Gas"
-#print(option)
-
-df1 = df_gas[df_gas['Year'] == 2000]
-
-def update_plot(attr, old, new):
-    yr = slider.value
-    new_data = json_data_selector(yr)
-    geosource.geojson = new_data
-    global df1
-    df1 = df_gas[df_gas['Year'] == yr]
-    # p.title.text = 'Russian export influence over Europe: Natural Gas, %d' %yr
-    p.title.text = 'Russian export influence over Europe: {}, year {}'.format(option, yr)
-   # return values(yr)
-
-#print(update_plot)
-print(df1)
-# Make a slider object: slider
-slider = Slider(title='Year', start=2000, end=2020, step=1, value=2000)
-# callback.args['']
-slider.on_change('value_throttled', update_plot)  # 'value_throttled' -> the value is updated only at the mouseup
+    source = ColumnDataSource(df)
+    p = figure(x_range=(2000, 2020))
+    p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
+    p.y_range = Range1d(start=0, end=110)
+    p.yaxis.axis_label = 'Dependency on Russia in %'
+    if year is not None:
+        # df = df[df['Year'] == year]
+        source = ColumnDataSource(df.loc[(df.Year == year)])
+        p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
+    p.background_fill_color = (245, 245, 245)
+    p.border_fill_color = (245, 245, 245)
+    p.outline_line_color = (245, 245, 245)
+    return p
 
 
+def bokeh_plot_multilines(df, column=None, year=None, title=''):
+    global datasetname
+    if datasetname == "Natural Gas":
+        color = 'green'
+        df_main = df_gas
+    elif datasetname == "Oil Petrol":
+        color = 'blue'
+        df_main = df_oil
+    elif datasetname == "Solid Fuel":
+        color = 'orange'
+        df_main = df_solid
 
-def update(attr, old, new):
-    global option
-    option = LABELS[radio_button_group.active]
-    update_plot('value', slider.value, slider.value)
+    source = ColumnDataSource(df)
+    p = figure(x_range=(2000, 2020))
 
+    p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
 
+    p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
+    p.yaxis.axis_label = 'Dependency on Russia in %'
+    for country in countries:
+        p.line(x='Year', y=column, line_color='gray', source=ColumnDataSource())
 
-LABELS = ["Natural Gas", "Oil Petrol", "Solid Fuel"]
-radio_button_group = RadioButtonGroup(labels=LABELS, active=0)
-radio_button_group.on_change('active', update)
-
-# Make a column layout of widgetbox(slider) and plot, and add it to the current document
-l0 = column(widgetbox(radio_button_group), p)
-l = column(l0, widgetbox(slider))
-
-
-# --------------------------------------- SCATTER PLOT (TODO Replace by one of our graphs)
-import random
-
-count = 10
-x = range(count)
-y = random.sample(range(0, 101), count)
-p2 = figure(plot_width=400, plot_height=400)  # figure is a type of plot
-# using various glyph methods to create scatter
-# plots of different marker shapes
-p2.circle(x, y, size=30, color='red', legend_label='circle')
-p2.line(x, y, width=2, color='blue', legend_label='line')
-p2.triangle(x, y, size=10, color='gold', legend_label='triangle')
-
-# df_gas2 = df_gas2[df_gas2['Year'] == 2020]
-# df_gas2.reset_index(drop=True, inplace=True)
-# df_gas2 = df_gas2.drop(['Year'], axis=1)
-# df_gas2 = df_gas2.drop([0, 2, 9, 13, 21, 28, 29, 32, 36, 40, 41, 42, 43])
-# df_gas2.reset_index(drop=True, inplace=True)
-# df_gas2
-"""
-x = {
-    'Germany': 157,
-    'Poland': 93,
-    'Italy': 89,
-    'France': 63,
-    'Sweden': 44,
-    'Finland': 42,
-    'Greece': 40,
-    'Spain': 35,
-    'Czech Republic': 32,
-    'Bulgaria': 31,
-    'Romania': 31,
-    'Other': 29
-}
-"""
-x = {
-    'Russia': 157,
-    'Norway': 93,
-    'Algeria': 89,
-    'Libya': 63,
-    'Saudi Arabia': 44,
-    'Egypt': 42,
-    'Kuwait': 40,
-    'United Arab Emirates': 35,
-    'Iran': 32,
-    'Iraq': 31,
-    'Kazakhstan': 31,
-    'Other': 29
-}
-
-data = pd.Series(x).reset_index(name='value').rename(columns={'index': 'country'})
-data['angle'] = data['value'] / data['value'].sum() * 2 * np.pi
-data['color'] = Category20[len(x)]
-
-#p5 = figure(height=350, title="Relative natural gas importers to the EU", toolbar_location=None,
- #           tools="hover", tooltips="@country: @value", x_range=(-0.5, 1.0))
-
-#p5.annular_wedge(x=0, y=1, inner_radius=0.1, outer_radius=0.4,
- #        start_angle=cumsum('angle', include_zero=True), end_angle=cumsum('angle'),
- #        line_color="white", fill_color='color', legend_field='country', source=data)
- #---------------------------------------------------------------------tree
- 
+    if year is not None:
+        # df = df[df['Year'] == year]
+        source = ColumnDataSource(df.loc[(df.Year == year)])
+        p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
+    p.background_fill_color = "WhiteSmoke"
+    return p
 
 
-pn.extension('plotly')
+# ref.: https://stackoverflow.com/questions/57301630/trigger-event-on-mouseup-instead-of-continuosly-with-panel-slider-widget
+class IntThrottledSlider(pnw.IntSlider):
+    value_throttled = param.Integer(default=0)
 
+map_pane = None
 
+# Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
+def create_app():
+    """Map dashboard"""
+    map_pane = pn.pane.Bokeh(width=900, height=650)
+    data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
+                                              options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
+    year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
+    dropdown_country.value = sel_country
+    treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
+    lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
-fig = px.treemap(df1, path=['Year','Country'], values='Import',
-                  color='Country', hover_data=['Import'],
-                  color_continuous_scale='RdBu',
-                  color_continuous_midpoint=np.average(df1['Import'], weights=df1['Import']))
+    df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
+    table_formatters = {
+        'Import Percentage (%)': NumberFormatter(format='0.0'),
+        'Import Value (?)': NumberFormatter(format='0'),
+    }
+    table_pane = pn.widgets.Tabulator(df_table, name='DataFrame', disabled = True, formatters=table_formatters)
 
-#fig.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=40,pad=2), paper_bgcolor="LightSteelBlue")
-fig.update_layout(width=800, height= 390,margin=dict(l=10,r=10,b=10,t=50,pad=2))
- #---------------------------------------------------------------------tree
-#---------------------------------------------------------------------TRY
+    def update_table():
+        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
+        country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
+        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
+        table_pane.value = df_table
 
+    pn.state.add_periodic_callback(update_table, period=1000)
 
+    def update_widgets(event):
+        global replot
+        if str(event.obj)[:6] != 'Select' or replot is True:
+            df_map = get_dataset(name=data_select.value, year=year_slider.value)
+            map_pane.object = bokeh_plot_map(df_map, column='Import')
+            #geosource.selected = Selection(indices=gdf.index[gdf['Country'] == sel_country].tolist())
+            #if replot is False:
+            #    geosource.selected.indices = gdf.index[gdf['Country'] == sel_country].tolist()
+            replot = False
 
-#p5 = figure(plot_width=width, plot_height=height, title="",
-#    x_axis_type=None, y_axis_type=None,
-#    x_range=(-420, 420), y_range=(-420, 420),
-#    min_border=0, outline_line_color="black",
-#    background_fill_color="#f0e1d2")
+        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        treemap_pane.object = plotly_plot_treemap(df_treemap, column='Import')
 
-#-----------------------------------------------------------------------TRY
+        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
+        return
 
-#p5.axis.axis_label = None
-#p5.axis.visible = False
-#p5.grid.grid_line_color = None
+    year_slider.param.watch(update_widgets, 'value_throttled')
+    year_slider.param.trigger('value_throttled')
+    data_select.param.watch(update_widgets, 'value')
+    dropdown_country.param.watch(update_widgets, 'value')
+    table_pane
 
-# l2 = row(l, p5)
-# --------------------------------------- STACKED BAR CHART (TODO Replace by one of our graphs)
-sitc = df_sitc.columns.values
-df_sitc = df_sitc.reset_index()
-df_sitc['date'] = df_sitc['date'].astype(str)  # to show it in the x-axis
-source = ColumnDataSource(data=df_sitc)  # data for the graph
-Date = source.data['date']
+    treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    mapTitle = pn.widgets.StaticText(name='Map. ', value='Degree of Russian Influence')
+    tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    mainTitle = pn.pane.Markdown('### DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA ',  background=(245, 245, 245), style={'font-family': "arial"})
 
-source = ColumnDataSource(df_sitc.reset_index())
+    map_pane.sizing_mode = "stretch_both"
+    lines_pane.sizing_mode = "stretch_both"
+    table_pane.sizing_mode = "stretch_width"
+    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, table_pane ,tableTitle,background='WhiteSmoke')
+    #l.aspect_ratio = 1.2
+    l.sizing_mode = "scale_width"
+    l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
+    app = pn.Row(l, l2, background='WhiteSmoke')
+    #app = pn.Column(l3, background='WhiteSmoke')
 
-p4 = figure(x_range=Date, height=350, width=800, title="SITC imports by year")
+    app.sizing_mode = "stretch_height"
+    app.servable()
+    return app
 
-#p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
-#              legend_label=str(sitc))  # TODO: Problem with the label
-p4.vbar_stack(stackers=sitc, x='date', width=0.5, source=source, color=Category20[15],
-              legend_label=["%s" % x for x in sitc])  # TODO: Problem with the label
-
-# p4.y_range.start = 0
-# p4.x_range.range_padding = 0.1
-p4.xgrid.grid_line_color = None
-p4.axis.minor_tick_line_color = None
-p4.outline_line_color = None
-#p4.legend.location = "top_left"
-p4.legend.location = "right"
-p4.legend.orientation = "vertical"
-# -----
-
-
-# create a Pandas dataframe
-df = pd.DataFrame(dict(
-    x=[1, 2, 3, 4, 5],
-    y=random.sample(range(1, 11), 5),
-))
-# create a ColumnDataSource obj using a dataframe
-src = ColumnDataSource(data=df)
-p3 = figure(plot_width=400, plot_height=400)
-p3.vbar(x='x',
-        top='y',
-        source=src,
-        width=0.5,
-        bottom=0,
-        color='lightgreen')
-
-ui = pn.Column(fig, p4)
-uu = pn.Row(l, ui)
-uu.servable()
-# Display plot inline in Jupyter notebook
-# output_notebook()
-# =show(l)
+app = create_app()
