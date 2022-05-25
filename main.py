@@ -247,8 +247,8 @@ def create_app():
 
     df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
     table_formatters = {
-        'Import Percentage (%)': NumberFormatter(format='0.0'),
-        'Import Value (?)': NumberFormatter(format='0'),
+        '  Import Percentage (%)  ': NumberFormatter(format='0.0'),
+        '  Import Value (?)       ': NumberFormatter(format='0'),
     }
     table_pane = pn.widgets.Tabulator(df_table, name='DataFrame', disabled = True, formatters=table_formatters)
 
@@ -293,7 +293,7 @@ def create_app():
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
-    table_pane.sizing_mode = "stretch_width"
+    #table_pane.sizing_mode = "stretch_width"
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, table_pane ,tableTitle,background='WhiteSmoke')
     #l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
