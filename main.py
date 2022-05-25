@@ -18,6 +18,8 @@ import plotly.express as px
 import pickle
 import param
 
+from matplotlib.axis import Axis
+
 pn.extension('plotly')
 pn.extension('tabulator', css_files=[pn.io.resources.CSS_URLS['font-awesome']])
 
@@ -41,56 +43,67 @@ gdf.crs = {"init": "epsg:4326"}
 
 # Getting a list of countries:
 countries = list(df_gas['Country'].unique())
-dropdown_country = pn.widgets.Select(name='Select', options=countries, width = 130)
-
+dropdown_country = pn.widgets.Select(name='Select', options=countries, width = 130, margin=(-5, 0, 0, 0))
 
 def get_dataset(name, year=None):
     global datasetname
+    global units
     if name == "Natural Gas":
         df = df_gas[df_gas['Year'] == year]
+        units = 'm3'
     elif name == "Oil Petrol":
         df = df_oil[df_oil['Year'] == year]
+        units = 'tonnes'
     elif name == "Solid Fuel":
         df = df_solid[df_solid['Year'] == year]
+        units = 'tonnes'
     datasetname = name
     merged = gdf.merge(df, on='Country', how='left')
     return merged
 
-
 def get_dataset_exp(name, year, country='EU27_2020'):
     global datasetname
+    global units
     if name == "Natural Gas":
         df = df_gas_treemap[df_gas_treemap['Country'] == country]
         df = df[df['Year'] == year]
+        units = 'm3'
     elif name == "Oil Petrol":
         df = df_oil_treemap[df_oil_treemap['Country'] == country]
         df = df[df['Year'] == year]
+        units = 'tonnes'
     elif name == "Solid Fuel":
         df = df_solid_treemap[df_solid_treemap['Country'] == country]
         df = df[df['Year'] == year]
+        units = 'tonnes'
 
     df = df[df['Import'] != 0]
     datasetname = name
     return df
 
-
 def get_dataset_line(name, year, country='EU27_2020'):
     global datasetname
+    global units
     if name == "Natural Gas":
         df = df_gas[df_gas['Country'] == country]
+        units = 'm3'
         # df = df[df['Year'] == year]
     elif name == "Oil Petrol":
         df = df_oil[df_oil['Country'] == country]
+        units = 'tonnes'
         # df = df[df['Year'] == year]
     elif name == "Solid Fuel":
         df = df_solid[df_solid['Country'] == country]
+        units = 'tonnes'
         # df = df[df['Year'] == year]
 
     datasetname = name
     return df
 
-
 datasetname = 'Natural Gas'
+units = 'm3'
+sel_country = 'EU27_2020'
+year = 2000
 
 # Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
 def get_geodatasource(gdf):
@@ -98,14 +111,10 @@ def get_geodatasource(gdf):
     json_data = json.dumps(json.loads(gdf.to_json()))
     return GeoJSONDataSource(geojson=json_data)
 
-
 # Define custom tick labels for color bar.
 tick_labels = {'0': '0%', '20': '20%', '40': '40%', '60': '60%', '80': '80%', '100': '100%', }
 
-sel_country = 'EU27_2020'
-year = 2000
 replot = False
-
 
 def selected_country(attr, old, new):
     global sel_country, replot
@@ -116,7 +125,6 @@ def selected_country(attr, old, new):
         replot = True
         dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of list
         dropdown_country.value = 'EU27_2020'
-    # print(sel_country)
 
 # Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
 def bokeh_plot_map(gdf, column=None):
@@ -135,7 +143,7 @@ def bokeh_plot_map(gdf, column=None):
     palette = palette[::-1]
     vals = gdf[column]
 
-    hover_custom = HoverTool(tooltips=[('Country: ', '@Country'),
+    hover_custom = HoverTool(tooltips=[('Country', '@Country'),
                                 ('Russian {} Import'.format(datasetname), '@Import{0.0} %')])
     # Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
     color_mapper = LinearColorMapper(palette=palette, low=0, high=100)
@@ -169,24 +177,25 @@ def plotly_plot_treemap(df, column=None, title=''):
                    color_continuous_midpoint=np.average(df[column],
                                                         weights=df[column]))
     # print(df_treemap)
-    p.update_layout( margin=dict(l=20, r=5, b=1, t=5, pad=2),
+    p.update_layout(margin=dict(l=20, r=5, b=1, t=5, pad=2),
                     paper_bgcolor="WhiteSmoke")
     return p
 
-def bokeh_plot_lines(df, column=None, year=None, title=''):
+def bokeh_plot_lines(df, column=None, year=None):
     global datasetname
-    if datasetname == "Natural Gas":
+    if datasetname== "Natural Gas":
         color = 'green'
-    elif datasetname == "Oil Petrol":
+    elif datasetname== "Oil Petrol":
         color = 'blue'
-    elif datasetname == "Solid Fuel":
+    elif datasetname== "Solid Fuel":
         color = 'orange'
 
     source = ColumnDataSource(df)
     p = figure(x_range=(2000, 2020))
-    p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
+    p.line(x='Year', y=column, line_width=3, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
     p.y_range = Range1d(start=0, end=110)
     p.yaxis.axis_label = 'Dependency on Russia in %'
+
     if year is not None:
         # df = df[df['Year'] == year]
         source = ColumnDataSource(df.loc[(df.Year == year)])
@@ -196,26 +205,24 @@ def bokeh_plot_lines(df, column=None, year=None, title=''):
     p.outline_line_color = (245, 245, 245)
     return p
 
-
-def bokeh_plot_multilines(df, column=None, year=None, title=''):
+def bokeh_plot_multilines(df, column=None, year=None):
     global datasetname
-    if datasetname == "Natural Gas":
+    if datasetname== "Natural Gas":
         color = 'green'
         df_main = df_gas
-    elif datasetname == "Oil Petrol":
+    elif datasetname== "Oil Petrol":
         color = 'blue'
         df_main = df_oil
-    elif datasetname == "Solid Fuel":
+    elif datasetname== "Solid Fuel":
         color = 'orange'
         df_main = df_solid
 
     source = ColumnDataSource(df)
     p = figure(x_range=(2000, 2020))
-
     p.line(x='Year', y=column, line_width=2, line_color=color, source=source, legend_label=df.iloc[0]['Country'])
-
     p.y_range = Range1d(0, 100, max_interval=100, min_interval=0)
     p.yaxis.axis_label = 'Dependency on Russia in %'
+    
     for country in countries:
         p.line(x='Year', y=column, line_color='gray', source=ColumnDataSource())
 
@@ -225,7 +232,6 @@ def bokeh_plot_multilines(df, column=None, year=None, title=''):
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = "WhiteSmoke"
     return p
-
 
 # ref.: https://stackoverflow.com/questions/57301630/trigger-event-on-mouseup-instead-of-continuosly-with-panel-slider-widget
 class IntThrottledSlider(pnw.IntSlider):
@@ -241,28 +247,36 @@ def create_app():
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
     dropdown_country.value = sel_country
-    treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
+    treemap_pane = pn.pane.plotly.Plotly(width=780, height=380,margin=(-8, 0, 0, 0))
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
-    df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
+    df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value ({})'.format(units): [0]}).set_index('Country')
     table_formatters = {
-        '  Import Percentage (%)  ': NumberFormatter(format='0.0'),
-        '  Import Value (?)       ': NumberFormatter(format='0'),
+        '  Import Percentage (%)': NumberFormatter(format='0.0'),
+        '  Import Value ({})'.format(units): NumberFormatter(format='0'),
     }
     table_pane = pn.widgets.Tabulator(df_table, name='DataFrame', disabled = True, formatters=table_formatters)
 
     def update_table():
+        global table_formatters
         df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
         country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
-        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
+        table_formatters = {
+        '  Import Percentage (%)': NumberFormatter(format='0.0'),
+        '  Import Value ({})'.format(units): NumberFormatter(format='0'),
+        }
+        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value ({})'.format(units): [country_abs]}).set_index('Country')
         table_pane.value = df_table
 
     pn.state.add_periodic_callback(update_table, period=1000)
 
     def update_widgets(event):
         global replot
+        global sel_country
+        sel_country = dropdown_country.value
+
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
@@ -284,14 +298,18 @@ def create_app():
     dropdown_country.param.watch(update_widgets, 'value')
     table_pane
 
-    treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mapTitle = pn.widgets.StaticText(name='Map. ', value='Degree of Russian Influence')
-    tableTitle = pn.widgets.StaticText(name='Table. ', value='Selected country')
-    mainTitle = pn.pane.Markdown('### DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA ',  background=(245, 245, 245), style={'font-family': "arial"})
+    #treeTitle = pn.widgets.StaticText(name='Treemap', value='Country over Region Influence in Energy Export', align="end", margin=(0, 80, 0, 0))
+    treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
+    #lineTitle = pn.widgets.StaticText(name='Timegraph', value='Historical Energy Import Data', align="end", margin=(0, 80, 0, 0))
+    lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
+    #mapTitle = pn.widgets.StaticText(name='Map. ', value='Degree of Russian Influence', align="end", margin=(0, 80, 0, 0))
+    mapTitle = pn.pane.Markdown(""" *Map. Russian Energy Export Influence over Europe* """, align="end", margin=(-15, 80, 0, 0))
+    #tableTitle = pn.widgets.StaticText(name='Table. ', value='Selected country energy import', align="start", margin=(0, 0, 0, 170))
+    tableTitle = pn.pane.Markdown(""" *Table. Selected Country Energy Import* """, align="start", margin=(-15, 0, 0, 180))
+    mainTitle = pn.pane.Markdown('## *DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA*', background=(245, 245, 245), style={'font-family': "arial"}, align="end", margin=(-10, 70, 0, 0))
 
     map_pane.sizing_mode = "stretch_both"
-    lines_pane.sizing_mode = "stretch_both"
+    #lines_pane.sizing_mode = "stretch_both"
     #table_pane.sizing_mode = "stretch_width"
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, table_pane ,tableTitle,background='WhiteSmoke')
     #l.aspect_ratio = 1.2
