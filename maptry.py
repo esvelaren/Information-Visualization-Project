@@ -7,6 +7,7 @@ import pylab as plt
 import numpy as np
 from bokeh.io import output_file, show, output_notebook, export_png
 from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d, Selection
+from bokeh.models.widgets.tables import NumberFormatter
 from bokeh.models.widgets import DataTable
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
@@ -18,6 +19,7 @@ import pickle
 import param
 
 pn.extension('plotly')
+pn.extension('tabulator', css_files=[pn.io.resources.CSS_URLS['font-awesome']])
 
 # Loading pickles:
 # Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
@@ -233,22 +235,35 @@ map_pane = None
 
 def map_dash():
     """Map dashboard"""
-    
     map_pane = pn.pane.Bokeh(width=900, height=650)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
-    # data_select = pnw.Select(name='dataset', options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
     dropdown_country.value = sel_country
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=380)
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
     df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [0], 'Import Value (?)': [0]}).set_index('Country')
-    df_widget = pn.widgets.DataFrame(df_table, name='DataFrame',margin=(0, 55, 0, 0))
+    table_formatters = {
+        'Import Percentage (%)': NumberFormatter(format='0.0'),
+        'Import Value (?)': NumberFormatter(format='0'),
+    }
+    table_pane = pn.widgets.Tabulator(df_table, name='DataFrame', disabled = True, formatters=table_formatters)
+
+    # table_pane.value = df_table
+
+    def update_table():
+        df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
+        country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
+        country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
+        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
+        table_pane.value = df_table
+
+    pn.state.add_periodic_callback(update_table, period=1000)
 
     def update_map(event):
         global replot
-        global df_widget
         if str(event.obj)[:6] != 'Select' or replot is True:
             df_map = get_dataset(name=data_select.value, year=year_slider.value)
             map_pane.object = bokeh_plot_map(df_map, column='Import')
@@ -262,33 +277,25 @@ def map_dash():
 
         df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         lines_pane.object = bokeh_plot_lines(df_lines, column='Import', year=year_slider.value)
-
-        country_rel = df_lines[(df_lines['Year']== year_slider.value)].iat[0,2]
-        country_abs = df_treemap[(df_treemap['Partner']== 'Russia')].iat[0,4]
-        print('country_rel ',country_rel)
-        print('country_abs ',country_abs)
-        # print("Selected Country: ",sel_country)
-        # print("Selected Year:", year_slider.value)
-        df_table = pd.DataFrame({'Country': [sel_country], 'Import Percentage (%)': [country_rel], 'Import Value (?)': [country_abs]}).set_index('Country')
-        df_widget = pn.widgets.DataFrame(df_table, name='DataFrame')
-        # df = df[df['Year'] == year]
+        
         return
 
     year_slider.param.watch(update_map, 'value_throttled')
     year_slider.param.trigger('value_throttled')
     data_select.param.watch(update_map, 'value')
     dropdown_country.param.watch(update_map, 'value')
+    table_pane
 
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mapTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    mapTitle = pn.widgets.StaticText(name='Map: Russian energy Influence over different', value='A string')
     tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
-    mainTitle = pn.pane.Markdown('### Russian Resource Influence Over Europe',  background=(245, 245, 245), style={'font-family': "serif"})
+    mainTitle = pn.pane.Markdown('### DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA ',  background=(245, 245, 245), style={'font-family': "serif"})
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
-    df_widget.sizing_mode = "stretch_width"
-    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, df_widget ,tableTitle,background='WhiteSmoke')
+    table_pane.sizing_mode = "stretch_width"
+    l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, table_pane ,tableTitle,background='WhiteSmoke')
     #l.aspect_ratio = 1.2
     l.sizing_mode = "scale_width"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
