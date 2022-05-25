@@ -298,25 +298,25 @@ def create_app():
     dropdown_country.param.watch(update_widgets, 'value')
     table_pane
 
-    #treeTitle = pn.widgets.StaticText(name='Treemap', value='Country over Region Influence in Energy Export', align="end", margin=(0, 80, 0, 0))
-    treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
-    #lineTitle = pn.widgets.StaticText(name='Timegraph', value='Historical Energy Import Data', align="end", margin=(0, 80, 0, 0))
-    lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
-    #mapTitle = pn.widgets.StaticText(name='Map. ', value='Degree of Russian Influence', align="end", margin=(0, 80, 0, 0))
-    mapTitle = pn.pane.Markdown(""" *Map. Russian Energy Export Influence over Europe* """, align="end", margin=(-15, 80, 0, 0))
-    #tableTitle = pn.widgets.StaticText(name='Table. ', value='Selected country energy import', align="start", margin=(0, 0, 0, 170))
-    tableTitle = pn.pane.Markdown(""" *Table. Selected Country Energy Import* """, align="start", margin=(-15, 0, 0, 180))
-    mainTitle = pn.pane.Markdown('## *DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA*', background=(245, 245, 245), style={'font-family': "arial"}, align="end", margin=(-10, 70, 0, 0))
+    treeTitle = pn.widgets.StaticText(name='', value=' Treemap. Country over Region Influence in Energy Export', align="end", margin=(0, 80, 0, 0))
+    #treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
+    lineTitle = pn.widgets.StaticText(name='', value=' Timegraph. Historical Energy Import Data', align="end", margin=(0, 80, 0, 0))
+    #lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
+    mapTitle = pn.widgets.StaticText(name='', value=' Map. Degree of Russian Influence', align="end", margin=(0, 80, 0, 0))
+    #mapTitle = pn.pane.Markdown(""" *Map. Russian Energy Export Influence over Europe* """, align="end", margin=(-15, 80, 0, 0))
+    tableTitle = pn.widgets.StaticText(name='', value=' Table. Selected country energy import', align="start", margin=(0, 0, 0, 170))
+    #tableTitle = pn.pane.Markdown(""" *Table. Selected Country Energy Import* """, align="start", margin=(-15, 0, 0, 180))
+    mainTitle = pn.pane.Markdown('### *DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA*', background=(245, 245, 245), style={'font-family': "arial"}, align="end", margin=(-5, 70, 0, 0))
 
     map_pane.sizing_mode = "stretch_both"
-    #lines_pane.sizing_mode = "stretch_both"
-    #table_pane.sizing_mode = "stretch_width"
+    lines_pane.sizing_mode = "stretch_both"
+
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),dropdown_country, background='WhiteSmoke'), map_pane, mapTitle, table_pane ,tableTitle,background='WhiteSmoke')
     #l.aspect_ratio = 1.2
-    l.sizing_mode = "scale_width"
+    l.sizing_mode = "scale_both"
     l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
-    #app = pn.Column(l3, background='WhiteSmoke')
+   
 
     app.sizing_mode = "stretch_height"
     app.servable()
