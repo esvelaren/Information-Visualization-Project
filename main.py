@@ -135,15 +135,15 @@ def bokeh_plot_map(gdf, column=None):
     palette = palette[::-1]
     vals = gdf[column]
 
-    hover = HoverTool(tooltips=[('Country: ', '@Country'),
-                                ('Russian {} Import'.format(datasetname), '@Import')])
+    hover_custom = HoverTool(tooltips=[('Country: ', '@Country'),
+                                ('Russian {} Import'.format(datasetname), '@Import{0.0} %')])
     # Instantiate LinearColorMapper that linearly maps numbers in a range, into a sequence of colors.
     color_mapper = LinearColorMapper(palette=palette, low=0, high=100)
     color_bar = ColorBar(color_mapper=color_mapper, label_standoff=8, height=660, width=20,
                          location=(0, 0), orientation='vertical', border_line_color=None,
                          major_label_overrides=tick_labels, background_fill_color='WhiteSmoke')
 
-    tools = 'wheel_zoom,pan,reset,hover,tap'
+    tools = 'wheel_zoom,pan,reset,tap'
     p = figure(title='', plot_height=250, plot_width=600, toolbar_location='right', tools=tools)
     p.xaxis.visible = False
     p.yaxis.visible = False
@@ -157,7 +157,7 @@ def bokeh_plot_map(gdf, column=None):
               fill_color={'field': column, 'transform': color_mapper})
     # Specify figure layout.
     p.add_layout(color_bar, 'right')
-    p.add_tools(hover)
+    p.add_tools(hover_custom)
     return p
 
 # Ref: https://plotly.com/python/treemaps/
@@ -172,7 +172,6 @@ def plotly_plot_treemap(df, column=None, title=''):
     p.update_layout( margin=dict(l=20, r=5, b=1, t=5, pad=2),
                     paper_bgcolor="WhiteSmoke")
     return p
-
 
 def bokeh_plot_lines(df, column=None, year=None, title=''):
     global datasetname
@@ -288,7 +287,7 @@ def create_app():
     treeTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     lineTitle = pn.widgets.StaticText(name='Static Text', value='A string')
     mapTitle = pn.widgets.StaticText(name='Map. ', value='Degree of Russian Influence')
-    tableTitle = pn.widgets.StaticText(name='Static Text', value='A string')
+    tableTitle = pn.widgets.StaticText(name='Table. ', value='Selected country')
     mainTitle = pn.pane.Markdown('### DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA ',  background=(245, 245, 245), style={'font-family': "arial"})
 
     map_pane.sizing_mode = "stretch_both"
