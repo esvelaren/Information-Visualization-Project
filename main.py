@@ -56,13 +56,13 @@ def get_dataset(name, year=None):
     global datasetname, units
     if name == "Natural Gas":
         df = df_gas[df_gas['Year'] == year]
-        units = 'm3'
+        units = 'million m3'
     elif name == "Oil Petrol":
         df = df_oil[df_oil['Year'] == year]
-        units = 'tonnes'
+        units = 'thousand tonnes'
     elif name == "Solid Fuel":
         df = df_solid[df_solid['Year'] == year]
-        units = 'tonnes'
+        units = 'thousand tonnes'
     datasetname = name
     merged = gdf.merge(df, on='Country', how='left')
     return merged
@@ -80,15 +80,15 @@ def get_dataset_exp(name, year, country='EU27_2020'):
     if name == "Natural Gas":
         df = df_gas_treemap[df_gas_treemap['Country'] == country]
         df = df[df['Year'] == year]
-        units = 'm3'
+        units = 'million m3'
     elif name == "Oil Petrol":
         df = df_oil_treemap[df_oil_treemap['Country'] == country]
         df = df[df['Year'] == year]
-        units = 'tonnes'
+        units = 'thousand tonnes'
     elif name == "Solid Fuel":
         df = df_solid_treemap[df_solid_treemap['Country'] == country]
         df = df[df['Year'] == year]
-        units = 'tonnes'
+        units = 'thousand tonnes'
 
     df = df[df['Import'] != 0]
     datasetname = name
@@ -107,15 +107,15 @@ def get_dataset_line(name, year, country='EU27_2020'):
     global units
     if name == "Natural Gas":
         df = df_gas[df_gas['Country'] == country]
-        units = 'm3'
+        units = 'million m3'
         # df = df[df['Year'] == year]
     elif name == "Oil Petrol":
         df = df_oil[df_oil['Country'] == country]
-        units = 'tonnes'
+        units = 'thousand tonnes'
         # df = df[df['Year'] == year]
     elif name == "Solid Fuel":
         df = df_solid[df_solid['Country'] == country]
-        units = 'tonnes'
+        units = 'thousand tonnes'
         # df = df[df['Year'] == year]
 
     datasetname = name
