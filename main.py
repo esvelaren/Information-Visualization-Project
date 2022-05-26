@@ -47,8 +47,13 @@ dropdown_country = pn.widgets.Select(name='Select', options=countries, width=130
 
 
 def get_dataset(name, year=None):
-    global datasetname
-    global units
+    """ This handle function is called when a specific sub-dataset for the map is required based on the year chosen and the current
+    global datasetname.
+    :param name: name of the energy import dataset to pass
+    :param year: chosen year to filter the dataset on
+    :return: filtered dataset merged with the countries' polygons dataset
+    """
+    global datasetname, units
     if name == "Natural Gas":
         df = df_gas[df_gas['Year'] == year]
         units = 'm3'
@@ -64,8 +69,14 @@ def get_dataset(name, year=None):
 
 
 def get_dataset_exp(name, year, country='EU27_2020'):
-    global datasetname
-    global units
+    """This handle function is called when a specific sub-dataset for the treemap is required based on the year chosen,
+    the current global datasetname, and the country selected.
+    :param name: name of the energy import dataset to pass
+    :param year: chosen year to filter the dataset on
+    :param country: country chosen to filter the dataset on
+    :return: filtered dataset based on the
+    """
+    global datasetname, units
     if name == "Natural Gas":
         df = df_gas_treemap[df_gas_treemap['Country'] == country]
         df = df[df['Year'] == year]
@@ -85,6 +96,13 @@ def get_dataset_exp(name, year, country='EU27_2020'):
 
 
 def get_dataset_line(name, year, country='EU27_2020'):
+    """ This handle function is called when a specific sub-dataset for the line graph is required based on the year
+    chosen, the current global datasetname, and the country selected.
+    :param name: name of the energy import dataset to pass
+    :param year: chosen year to filter the dataset on
+    :param country: country chosen to filter the dataset on
+    :return: filtered dataset based on the
+    """
     global datasetname
     global units
     if name == "Natural Gas":
@@ -124,6 +142,13 @@ replot = False
 
 
 def selected_country(attr, old, new):
+    """ This is a callback function that is called upon a map click. It allows highlighting the clicked country on
+    the map.
+    :param attr:
+    :param old: old clicked value
+    :param new: the most recent clicked value
+    :return: None
+    """
     global sel_country, replot
     sel_country = gdf._get_value(new[0], 'Country')
     if sel_country in countries:
@@ -136,7 +161,12 @@ def selected_country(attr, old, new):
 
 # Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
 def bokeh_plot_map(gdf, column=None):
-    """Plot bokeh map from GeoJSONDataSource """
+    """ Function plotting the bokeh map from GeoJSONDataSource and returning the map plot figure.
+
+    :param gdf: input of the geosource data
+    :param column: chosen name of the column to be filtered
+    :return: map figure
+    """
     global datasetname
     geosource = get_geodatasource(gdf)
     geosource.selected.on_change('indices', selected_country)
@@ -179,6 +209,12 @@ def bokeh_plot_map(gdf, column=None):
 
 # Ref: https://plotly.com/python/treemaps/
 def plotly_plot_treemap(df, column=None, title=''):
+    """ Function plotting the plotly treemap from the filtered dataset and returning the treemap plot figure.
+    :param df: filtered dataset by country and year
+    :param column: data column of the dataset to be displayed
+    :param title: title of the figure
+    :return: treemap figure
+    """
     # Ref: https://discourse.bokeh.org/t/treemap-chart/7907/3
     p = px.treemap(df, path=['Continent', 'Partner'], values=column,
                    color='Import', hover_data=[column],
@@ -192,6 +228,12 @@ def plotly_plot_treemap(df, column=None, title=''):
 
 
 def bokeh_plot_lines(df, column=None, year=None):
+    """ Function plotting the bokeh line graph from the filtered dataset and returning the timeline plot figure.
+    :param df: filtered dataset by country and year
+    :param column: data column of the dataset to be displayed
+    :param year: year to be used for drawing
+    :return: plot lines graph figure
+    """
     global datasetname
     if datasetname == "Natural Gas":
         color = 'green'
@@ -216,6 +258,7 @@ def bokeh_plot_lines(df, column=None, year=None):
     return p
 
 
+# not used for now
 def bokeh_plot_multilines(df, column=None, year=None):
     global datasetname
     if datasetname == "Natural Gas":
@@ -255,7 +298,9 @@ map_pane = None
 
 # Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
 def create_app():
-    """Map dashboard"""
+    """ Main function that is called, creating an app on bokeh server.
+    :return: visualization application
+    """
     map_pane = pn.pane.Bokeh(width=900, height=650)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
@@ -274,6 +319,9 @@ def create_app():
     table_pane = pn.widgets.Tabulator(df_table, name='DataFrame', disabled=True, formatters=table_formatters)
 
     def update_table():
+        """ Function called by the application being run to update the parts of the visualizations.
+        :return: None
+        """
         global table_formatters
         df_treemap = get_dataset_exp(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
         df_lines = get_dataset_line(name=data_select.value, year=year_slider.value, country=dropdown_country.value)
@@ -290,6 +338,9 @@ def create_app():
     pn.state.add_periodic_callback(update_table, period=1000)
 
     def update_widgets(event):
+        """ Function called by the application being run to update the parts of the visualizations.
+        :return: None
+        """
         global replot, sel_country
         sel_country = dropdown_country.value
 
