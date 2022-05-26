@@ -186,7 +186,7 @@ def plotly_plot_treemap(df, column=None, title=''):
                    color_continuous_midpoint=np.average(df[column],
                                                         weights=df[column]))
     # print(df_treemap)
-    p.update_layout(margin=dict(l=20, r=5, b=1, t=5, pad=2),
+    p.update_layout(margin=dict(l=20, r=5, b=1, t=20, pad=5),
                     paper_bgcolor="WhiteSmoke")
     return p
 
@@ -261,7 +261,7 @@ def create_app():
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
     year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
     dropdown_country.value = sel_country
-    treemap_pane = pn.pane.plotly.Plotly(width=780, height=380, margin=(-8, 0, 0, 0))
+    treemap_pane = pn.pane.plotly.Plotly(width=780, height=370, margin=(-8, 0, 0, 0))
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
 
     df_table = pd.DataFrame(
@@ -315,21 +315,23 @@ def create_app():
     dropdown_country.param.watch(update_widgets, 'value')
     table_pane
 
-    treeTitle = pn.widgets.StaticText(name='', value=' Treemap. Country over Region Influence in Energy Export',
+    treeTitle = pn.widgets.StaticText(name='Treemap', value='Country over Region Influence in Energy Export',
                                       align="end", margin=(0, 80, 0, 0))
     # treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
-    lineTitle = pn.widgets.StaticText(name='', value=' Timegraph. Historical Energy Import Data', align="end",
+    lineTitle = pn.widgets.StaticText(name='Timegraph', value='Historical Energy Import Data', align="end",
                                       margin=(0, 80, 0, 0))
     # lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
-    mapTitle = pn.widgets.StaticText(name='', value=' Map. Degree of Russian Influence', align="end",
+    mapTitle = pn.widgets.StaticText(name='Map', value='Degree of Russian Influence', align="end",
                                      margin=(0, 80, 0, 0))
     # mapTitle = pn.pane.Markdown(""" *Map. Russian Energy Export Influence over Europe* """, align="end", margin=(-15, 80, 0, 0))
-    tableTitle = pn.widgets.StaticText(name='', value=' Table. Selected country energy import', align="start",
+    tableTitle = pn.widgets.StaticText(name='Table', value='Selected country energy import', align="start",
                                        margin=(0, 0, 0, 170))
+    sourceTitle = pn.widgets.StaticText(name='Source', value=' Eurostat', align="end",
+                                       margin=(0, 80, 0, 0))
     # tableTitle = pn.pane.Markdown(""" *Table. Selected Country Energy Import* """, align="start", margin=(-15, 0, 0, 180))
     mainTitle = pn.pane.Markdown('### *DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA*',
                                  background=(245, 245, 245), style={'font-family': "arial"}, align="end",
-                                 margin=(-5, 70, 0, 0))
+                                 margin=(0, 70, 0, 0))
 
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
@@ -340,7 +342,7 @@ def create_app():
                          background='WhiteSmoke'), map_pane, mapTitle, table_pane, tableTitle, background='WhiteSmoke')
     # l.aspect_ratio = 1.2
     l.sizing_mode = "scale_both"
-    l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, background='WhiteSmoke')
+    l2 = pn.Column(mainTitle, treemap_pane, treeTitle, lines_pane, lineTitle, sourceTitle, background='WhiteSmoke')
     app = pn.Row(l, l2, background='WhiteSmoke')
 
     app.sizing_mode = "stretch_height"
