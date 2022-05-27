@@ -79,15 +79,15 @@ def get_dataset_exp(name, year, country='EU27_2020'):
     global datasetname, units
     if name == "Natural Gas":
         df = df_gas_treemap[df_gas_treemap['Country'] == country]
-        df = df[df['Year'] == year]
+        df = df[df['Year'] == year].round(1)
         units = 'million m3'
     elif name == "Oil Petrol":
         df = df_oil_treemap[df_oil_treemap['Country'] == country]
-        df = df[df['Year'] == year]
+        df = df[df['Year'] == year].round(1)
         units = 'thousand tonnes'
     elif name == "Solid Fuel":
         df = df_solid_treemap[df_solid_treemap['Country'] == country]
-        df = df[df['Year'] == year]
+        df = df[df['Year'] == year].round(1)
         units = 'thousand tonnes'
 
     df = df[df['Import'] != 0]
@@ -106,15 +106,15 @@ def get_dataset_line(name, year, country='EU27_2020'):
     global datasetname
     global units
     if name == "Natural Gas":
-        df = df_gas[df_gas['Country'] == country]
+        df = df_gas[df_gas['Country'] == country].round(1)
         units = 'million m3'
         # df = df[df['Year'] == year]
     elif name == "Oil Petrol":
-        df = df_oil[df_oil['Country'] == country]
+        df = df_oil[df_oil['Country'] == country].round(1)
         units = 'thousand tonnes'
         # df = df[df['Year'] == year]
     elif name == "Solid Fuel":
-        df = df_solid[df_solid['Country'] == country]
+        df = df_solid[df_solid['Country'] == country].round(1)
         units = 'thousand tonnes'
         # df = df[df['Year'] == year]
 
@@ -125,7 +125,7 @@ def get_dataset_line(name, year, country='EU27_2020'):
 datasetname = 'Natural Gas'
 units = 'm3'
 sel_country = 'EU27_2020'
-year = 2000
+year = 2020
 
 
 # Ref: https://dmnfarrell.github.io/bioinformatics/bokeh-maps
@@ -304,7 +304,7 @@ def create_app():
     map_pane = pn.pane.Bokeh(width=900, height=650)
     data_select = pn.widgets.RadioButtonGroup(name='Select Dataset',
                                               options=['Natural Gas', 'Oil Petrol', 'Solid Fuel'])
-    year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup')
+    year_slider = IntThrottledSlider(name='Year', start=2000, end=2020, callback_policy='mouseup', value=2020)
     dropdown_country.value = sel_country
     treemap_pane = pn.pane.plotly.Plotly(width=780, height=370, margin=(-8, 0, 0, 0))
     lines_pane = pn.pane.Bokeh(height=220, width=780, margin=(0, 50, 0, 0))
@@ -366,16 +366,16 @@ def create_app():
     dropdown_country.param.watch(update_widgets, 'value')
     table_pane
 
-    treeTitle = pn.widgets.StaticText(name='Treemap', value='Country over Region Influence in Energy Export',
+    treeTitle = pn.widgets.StaticText(name='Treemap', value='Exporters of the energy product for chosen region',
                                       align="end", margin=(0, 80, 0, 0))
     # treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
-    lineTitle = pn.widgets.StaticText(name='Timegraph', value='Historical Energy Import Data', align="end",
+    lineTitle = pn.widgets.StaticText(name='Timegraph', value='Energy product dependency on Russia over time', align="end",
                                       margin=(0, 80, 0, 0))
     # lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
-    mapTitle = pn.widgets.StaticText(name='Map', value='Degree of Russian Influence', align="end",
+    mapTitle = pn.widgets.StaticText(name='Map', value='Energy product dependency on Russia', align="end",
                                      margin=(0, 80, 0, 0))
     # mapTitle = pn.pane.Markdown(""" *Map. Russian Energy Export Influence over Europe* """, align="end", margin=(-15, 80, 0, 0))
-    tableTitle = pn.widgets.StaticText(name='Table', value='Selected country energy import', align="start",
+    tableTitle = pn.widgets.StaticText(name='Table', value='Energy product import of selected country', align="start",
                                        margin=(0, 0, 0, 170))
     sourceTitle = pn.widgets.StaticText(name='Source', value=' Eurostat', align="end",
                                        margin=(0, 80, 0, 0))
