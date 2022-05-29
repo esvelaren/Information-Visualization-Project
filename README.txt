@@ -1,6 +1,6 @@
 Instructions:
 
-1. Make sure to use an environment with python 3.9.11
+1. Recommended to use an environment with python 3.9
 
 You can easily do so by installing Anaconda:
 	https://docs.anaconda.com/anaconda/install/windows/
@@ -23,22 +23,8 @@ pip install plotly_express==0.4.0
 pip install panel
 + bokeh
 pip install bokeh
-+ matplotlib
-pip install matplotlib
-+ geopandas: to be installed correctly, install as follows:
-pip install wheel
-pip install pipwin
-pipwin install numpy
-pipwin install pandas
-pipwin install shapely
-pipwin install gdal
-pipwin install fiona
-pipwin install pyproj
-pipwin install six
-pipwin install rtree
-pipwin install geopandas
-+ descartes: for plotting geopandas
-pip install descartes
++ geopandas:
+pip install geopandas
 
 Note: 	You can do by typing in the terminal: pip install pandas (for example)
 	Maybe you are required to install something else, if so the

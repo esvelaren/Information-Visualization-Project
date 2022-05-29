@@ -1,17 +1,11 @@
-from turtle import width
 import pandas as pd
 import geopandas as gpd
 import json
-import matplotlib as mpl
-import pylab as plt
 import numpy as np
-from bokeh.io import output_file, show, output_notebook, export_png
 from bokeh.models import ColumnDataSource, GeoJSONDataSource, LinearColorMapper, ColorBar, HoverTool, Range1d, Selection
 from bokeh.models.widgets.tables import NumberFormatter
-from bokeh.models.widgets import DataTable
 from bokeh.plotting import figure
 from bokeh.palettes import brewer
-from bokeh.palettes import Category20
 import panel as pn
 import panel.widgets as pnw
 import plotly.express as px
@@ -23,8 +17,8 @@ from matplotlib.axis import Axis
 pn.extension('plotly')
 pn.extension('tabulator', css_files=[pn.io.resources.CSS_URLS['font-awesome']])
 
-# Loading pickles:
-# Optional: We can either obtain the datasets in another python file and load them here via pickle !OR! put everything in this python file and not use pickles.
+# Loading pickles: Optional: We can either obtain the datasets in another python file and load them here via pickle
+# !OR! put everything in this python file and not use pickles.
 with open('df_nat_gas_ru.pickle', 'rb') as handle:
     df_gas = pickle.load(handle)
 with open('df_oil_petrol_ru.pickle', 'rb') as handle:
@@ -47,10 +41,11 @@ dropdown_country = pn.widgets.Select(name='Select', options=countries, width=130
 
 
 def get_dataset(name, year=None):
-    """ This handle function is called when a specific sub-dataset for the map is required based on the year chosen and the current
-    global datasetname.
+    """ This handle function is called when a specific sub-dataset for the map is required based on the year chosen
+    and the current global datasetname.
     :param name: name of the energy import dataset to pass
-    :param year: chosen year to filter the dataset on
+    :param year: chosen
+    year to filter the dataset on
     :return: filtered dataset merged with the countries' polygons dataset
     """
     global datasetname, units
@@ -155,7 +150,9 @@ def selected_country(attr, old, new):
         dropdown_country.value = sel_country
     else:
         replot = True
-        dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of list
+        dropdown_country.value = 'Poland'
+        # dropdown_country.value = 'None'  # This is here to fake the change if two consecutive countries are out of
+        # list
         dropdown_country.value = 'EU27_2020'
 
 
@@ -249,7 +246,6 @@ def bokeh_plot_lines(df, column=None, year=None):
     p.yaxis.axis_label = 'Dependency on Russia in %'
 
     if year is not None:
-        # df = df[df['Year'] == year]
         source = ColumnDataSource(df.loc[(df.Year == year)])
         p.vbar(x='Year', top=column, bottom=0, width=0.5, source=source, fill_color=color, fill_alpha=0.5)
     p.background_fill_color = (245, 245, 245)
@@ -369,7 +365,8 @@ def create_app():
     treeTitle = pn.widgets.StaticText(name='Treemap', value='Exporters of the energy product for chosen region',
                                       align="end", margin=(0, 80, 0, 0))
     # treeTitle = pn.pane.Markdown(""" *Treemap. Influence of Countries over Regions in Energy Export* """, align="end", margin=(-10, 80, 0, 0))
-    lineTitle = pn.widgets.StaticText(name='Timegraph', value='Energy product dependency on Russia over time', align="end",
+    lineTitle = pn.widgets.StaticText(name='Timegraph', value='Energy product dependency on Russia over time',
+                                      align="end",
                                       margin=(0, 80, 0, 0))
     # lineTitle = pn.pane.Markdown(""" *Timegraph. Historical Energy Import Data for Selected Country* """, align="end", margin=(-10, 80, 0, 0))
     mapTitle = pn.widgets.StaticText(name='Map', value='Energy product dependency on Russia', align="end",
@@ -378,7 +375,7 @@ def create_app():
     tableTitle = pn.widgets.StaticText(name='Table', value='Energy product import of selected country', align="start",
                                        margin=(0, 0, 0, 170))
     sourceTitle = pn.widgets.StaticText(name='Source', value=' Eurostat', align="end",
-                                       margin=(0, 80, 0, 0))
+                                        margin=(0, 80, 0, 0))
     # tableTitle = pn.pane.Markdown(""" *Table. Selected Country Energy Import* """, align="start", margin=(-15, 0, 0, 180))
     mainTitle = pn.pane.Markdown('### *DEPENDENCY OF EUROPEAN UNION ON ENERGY IMPORTS FROM RUSSIA*',
                                  background=(245, 245, 245), style={'font-family': "arial"}, align="end",
@@ -387,7 +384,7 @@ def create_app():
     map_pane.sizing_mode = "stretch_both"
     lines_pane.sizing_mode = "stretch_both"
 
-    #l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10), dropdown_country,
+    # l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10), dropdown_country,
     #                     background='WhiteSmoke'), map_pane, mapTitle, table_pane, tableTitle, background='WhiteSmoke')
     l = pn.Column(pn.Row(data_select, pn.Spacer(width=10), year_slider, pn.Spacer(width=10),
                          background='WhiteSmoke'), map_pane, mapTitle, table_pane, tableTitle, background='WhiteSmoke')
